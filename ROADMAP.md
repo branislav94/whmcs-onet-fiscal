@@ -1,13 +1,14 @@
 # Development phases
 
-## Current checkpoint — v0.2.0 candidate
+## Current checkpoint — v0.2.0 verified sandbox
 
 - Manual WHMCS-to-V-PFR sandbox issuance confirmed.
 - Unknown outcome caused by mixed-case identifiers reconciled from the saved response without reissuing.
 - 40 standalone tests and 9 Capsule/SQLite integration/UI tests cover calculations, isolated test drafts, migration, source-aware locking and reconciliation.
 - Isolated sandbox screen and actionable TLS/payment diagnostics implemented.
 - PHP 8.3/8.4 and MySQL 8 GitHub Actions checks added.
-- Remaining phase-1 acceptance: verify the new screen and upgrade on the user's licensed WHMCS, and review CI results.
+- PHP 8.3/8.4 and MySQL CI passed. The user verified isolated transfer and card receipts on the installed WHMCS; PR #1 was merged.
+- Phase 2 working policy and accountant/legal questions: [docs/PHASE2-RULES-DRAFT.md](docs/PHASE2-RULES-DRAFT.md). Unconfirmed tax decisions remain drafts; no new production behavior is enabled.
 
 ## Phase 1 — Stable sandbox (target v0.2.0)
 
