@@ -1,4 +1,8 @@
-# ONET Fiskal — v0.4.0 sandbox
+# ONET Fiskal — v0.5.0 sandbox
+
+Adds explicitly confirmed Copy/Sale and Copy/Refund documents with original references, shared fiscal locking, reconciliation, a journal source and protected exports. Saved-original reprints remain read-only. Copies never change the refund balance, money-return evidence or WHMCS financial records. [Upgrade and first tests](docs/PHASE5-COPIES.md).
+
+## v0.4.0 foundation
 
 Manual full/partial noncash refunds of saved issued sales, preserving original prices, tax labels and references. Preview, buyer identification, shared fiscal locking, per-item quantity/cent limits, reconciliation and independent local test payment-return evidence. No bank API or WHMCS financial mutation. [Upgrade and first refund test](docs/PHASE3-REFUNDS.md).
 

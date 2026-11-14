@@ -6,14 +6,15 @@ Manual issuance, transfer/card tests, saved response reconciliation and duplicat
 ## Phase 2 — Journal and receipt presentation: v0.3.1 verified
 Read-only journal across both sources, filters and pagination; saved GIF QR; protected HTML/TXT downloads; browser print/Save as PDF; product/version and development installation identity. See [upgrade and acceptance checks](docs/PHASE2-JOURNAL.md). User confirmed the upgraded display; phase 2 PR #3 was merged.
 
-## Phase 3 — Refunds: v0.4.0 candidate
-Manual noncash full/partial refund flow and local test money-return evidence implemented. [First sandbox test and limitations](docs/PHASE3-REFUNDS.md). Awaiting user acceptance of a real sandbox refund.
+## Phase 3 — Refunds: sandbox verified
+Manual noncash full/partial refund flow and local test money-return evidence implemented. [First sandbox test and limitations](docs/PHASE3-REFUNDS.md). User verified full refund -4 of sale -3 (1190 RSD), partial refund -6 of sale -5 (2380 RSD, quantity 0.500), and reported the remaining-half flow working. PR #4 is merged.
 Full/partial refunds, buyer identification and original-receipt references, safe duplicate prevention and sandbox examples. Fiscal correction and bank refund remain separate, linked operations.
 
 ## Phase 4 — Accounting rules: in parallel
 Confirm supply timing for annual hosting, renewal and domains; advance/final documents; domestic business, individual and foreign customer routing, VAT and SEF. Existing accountant policy work remains provisional until reviewed.
 
-## Phase 5 — Complete fiscal document flows
+## Phase 5 — Complete fiscal document flows: copies candidate v0.5.0
+Copy/Sale and Copy/Refund implemented; [acceptance checks](docs/PHASE5-COPIES.md) await the first authenticated sandbox copy. This is one part of phase 5, not completion of the full checklist.
 Implement agreed advances and closing flows, copies, applicable tax, quantities, item catalogue/GTIN and remaining mandatory ESIR functions. Validate the whole applicable checklist rather than assuming current tests establish compliance.
 
 ## Phase 6 — Automation and customer delivery
