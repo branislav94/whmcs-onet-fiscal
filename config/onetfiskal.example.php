@@ -21,6 +21,8 @@ return [
     // Do not classify instant payment without checking the Serbian code mapping.
     'payment_map' => [
         'banktransfer' => 4,
+        'corvuspay' => 2,
+        'onetipsqr' => 4, // QR that fills a bank transfer order; not an integrated merchant IPS payment.
         // 'your_card_gateway' => 2,
     ],
 ];

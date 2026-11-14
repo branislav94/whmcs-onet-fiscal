@@ -8,7 +8,7 @@ use WHMCS\Database\Capsule;
 
 final class Admin
 {
-    private static function e(mixed $v): string
+    public static function e(mixed $v): string
     {
         return htmlspecialchars((string) $v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     }
@@ -22,7 +22,7 @@ final class Admin
         return $role && in_array((string) $role, explode(',', $access), true);
     }
 
-    private static function form(string $action, int $invoiceId, string $label, string $extra = ''): string
+    public static function form(string $action, int $invoiceId, string $label, string $extra = ''): string
     {
         return '<form method="post" action="addonmodules.php?module=onetfiskal&amp;invoiceid=' . $invoiceId . '" style="display:inline-block;margin:8px 8px 8px 0">'
             . (function_exists('generate_token') ? generate_token('form') : '')
@@ -38,9 +38,17 @@ final class Admin
             echo '<div class="alert alert-danger">Nemaš pristup modulu. Podesi Access Control u Addon Modules.</div>';
             return;
         }
+        try {
+            Store::install();
+        } catch (\Throwable) {
+            echo '<div class="alert alert-danger">Nadogradnja evidencije nije uspela. Proveri dozvole baze i otvori modul ponovo. Ne deaktiviraj modul i ne briši prethodnu evidenciju.</div>';
+            return;
+        }
         if (empty($_SESSION['onetfiskal_csrf'])) { $_SESSION['onetfiskal_csrf'] = bin2hex(random_bytes(32)); }
         $id = max(0, (int) ($_POST['invoiceid'] ?? $_GET['invoiceid'] ?? 0));
-        echo '<div style="max-width:1100px"><h2>ONET Fiskal <small>0.1.2 · SANDBOX</small></h2>';
+        $testId = max(0, (int) ($_POST['testid'] ?? $_GET['testid'] ?? 0));
+        $testView = ($_POST['view'] ?? $_GET['view'] ?? '') === 'tests' || $testId > 0;
+        echo '<div style="max-width:1100px"><h2>ONET Fiskal <small>0.2.0 · SANDBOX</small></h2>';
         echo '<div class="alert alert-warning"><strong>Razvojno okruženje — računi nisu za stvarni promet.</strong> '
             . 'Ova verzija izdaje samo test Promet–Prodaja za domaća fizička lica: jedna puna uplata, RSD, podešena sandbox VAT stopa, cene bez poreza u WHMCS-u. '
             . 'Avansi, refundacije, B2B, kredit sa naloga i automatsko slanje klijentima nisu uključeni.</div>';
@@ -56,9 +64,13 @@ final class Admin
                     throw new RuntimeException('Sesija ili CSRF token nisu važeći. Osveži stranicu.');
                 }
                 if (!$config) { throw new RuntimeException('Prvo podesi konfiguraciju.'); }
+                $action = (string) ($_POST['action'] ?? '');
+                if (str_starts_with($action, 'synthetic_')) {
+                    $testView = true;
+                    $testId = TestAdmin::handle($action, $config, $testId);
+                } else {
                 $api = new Vsdc($config);
                 $service = new Service(new Store(hash_file('sha256', $config['pfx_path'])), $api, $config);
-                $action = (string) ($_POST['action'] ?? '');
                 if ($action === 'test') {
                     $status = $service->preflight();
                     echo '<div class="alert alert-success">Veza je uspešna. JID: ' . self::e($status['uid']) . '; poreska oznaka '
@@ -68,7 +80,7 @@ final class Admin
                         throw new RuntimeException('Potvrdi da je ovo test izvršenog prometa bez ranijih avansa.');
                     }
                     $s = Store::snapshot($id);
-                    $hash = hash('sha256', json_encode($s, JSON_THROW_ON_ERROR));
+                    $hash = Checks::reviewHash($s, $config);
                     if (!hash_equals($hash, (string) ($_POST['snapshot_hash'] ?? ''))) {
                         throw new RuntimeException('WHMCS faktura ili uplata se promenila. Pregledaj nove podatke pre izdavanja.');
                     }
@@ -80,20 +92,31 @@ final class Admin
                 } else {
                     throw new RuntimeException('Nepoznata akcija.');
                 }
+                }
             } catch (\Throwable $e) {
                 echo '<div class="alert alert-danger">' . self::e($e->getMessage()) . '</div>';
             }
         }
-        echo self::form('test', $id, 'Proveri vezu i poresku oznaku');
+        echo '<p><a class="btn btn-default" href="addonmodules.php?module=onetfiskal">WHMCS fakture</a> '
+            . '<a class="btn btn-default" href="addonmodules.php?module=onetfiskal&amp;view=tests">Zaseban sandbox test</a></p>';
+        echo self::form('test', $id, 'Proveri vezu i poresku oznaku', $testView ? '<input type="hidden" name="view" value="tests"><input type="hidden" name="testid" value="' . $testId . '">' : '');
+        $guard = Capsule::table(Store::GUARD)->where('id', 1)->first();
+        if ($guard && $guard->attempt_id !== null) {
+            $synthetic = ($guard->source ?? 'invoice') === 'synthetic';
+            $busyId = Capsule::table($synthetic ? Store::TESTS : Store::TABLE)->where('id', $guard->attempt_id)->value('invoice_id');
+            $target = $synthetic ? 'view=tests&amp;testid=' : 'invoiceid=';
+            echo '<div class="alert alert-danger">Novo izdavanje je zaključano dok se ne proveri ishod '
+                . ($synthetic ? 'zasebnog testa ' : 'WHMCS fakture ') . '<a href="addonmodules.php?module=onetfiskal&amp;'
+                . $target . (int) $busyId . '">#' . (int) $busyId . '</a>.</div>';
+        }
+        if ($testView) {
+            TestAdmin::render($config, $testId);
+            echo '</div>';
+            return;
+        }
         echo '<form method="get" action="addonmodules.php" style="margin:16px 0"><input type="hidden" name="module" value="onetfiskal">'
             . '<label>WHMCS ID fakture <input type="number" name="invoiceid" min="1" value="' . ($id ?: '') . '" required></label> '
             . '<button class="btn btn-default">Otvori pregled</button></form>';
-        $busy = Capsule::table(Store::GUARD)->where('id', 1)->value('attempt_id');
-        if ($busy) {
-            $busyInvoice = Capsule::table(Store::TABLE)->where('id', $busy)->value('invoice_id');
-            echo '<div class="alert alert-danger">Novo izdavanje je zaključano dok se ne proveri ishod fakture '
-                . '<a href="addonmodules.php?module=onetfiskal&amp;invoiceid=' . (int) $busyInvoice . '">#' . (int) $busyInvoice . '</a>.</div>';
-        }
         if ($id > 0) {
             self::invoice($id, $config);
         }
@@ -119,13 +142,7 @@ final class Admin
                 echo '<p>' . self::e($row['message']) . '</p>';
             }
             if ($row && $row['state'] === 'issued') {
-                $response = json_decode($row['response'], true, 512, JSON_THROW_ON_ERROR);
-                echo '<div class="alert alert-success">Test račun: ' . self::e($response['invoiceNumber']) . '</div>';
-                $url = Checks::verificationUrl((string) ($response['verificationUrl'] ?? ''));
-                if ($url !== '') {
-                    echo '<p><a class="btn btn-success" target="_blank" rel="noopener noreferrer" href="' . self::e($url) . '">Proveri na sandbox portalu Poreske</a></p>';
-                }
-                echo '<pre style="white-space:pre-wrap">' . self::e($response['journal']) . '</pre>';
+                self::receipt(json_decode($row['response'], true, 512, JSON_THROW_ON_ERROR));
             } elseif ($row && in_array($row['state'], ['sending', 'unknown'], true)) {
                 echo self::form('reconcile', $id, 'Proveri ishod postojećeg zahteva (GET)');
             } elseif (!$row || $row['state'] === 'review') {
@@ -133,7 +150,7 @@ final class Admin
                 $payload = Builder::build($snapshot, $config, 'WHMCS admin ' . (int) $_SESSION['adminid']);
                 echo '<h4>Pregled zahteva</h4><pre style="max-height:380px;overflow:auto">'
                     . self::e(json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)) . '</pre>';
-                $extra = '<input type="hidden" name="snapshot_hash" value="' . hash('sha256', json_encode($snapshot, JSON_THROW_ON_ERROR)) . '">'
+                $extra = '<input type="hidden" name="snapshot_hash" value="' . Checks::reviewHash($snapshot, $config) . '">'
                     . '<p><label><input type="checkbox" name="confirmed" value="yes" required> Potvrđujem: sandbox test izvršenog prometa, bez ranijih avansa; nije račun za stvarnu prodaju.</label></p>';
                 echo self::form('issue', $id, 'Izdaj test Promet–Prodaja', $extra);
             }
@@ -143,5 +160,15 @@ final class Admin
         } catch (\Throwable $e) {
             echo '<div class="alert alert-info">' . self::e($e->getMessage()) . '</div>';
         }
+    }
+
+    public static function receipt(array $response): void
+    {
+        echo '<div class="alert alert-success">Test račun: ' . self::e($response['invoiceNumber'] ?? '') . '</div>';
+        $url = Checks::verificationUrl((string) ($response['verificationUrl'] ?? ''));
+        if ($url !== '') {
+            echo '<p><a class="btn btn-success" target="_blank" rel="noopener noreferrer" href="' . self::e($url) . '">Proveri na sandbox portalu Poreske</a></p>';
+        }
+        echo '<pre style="white-space:pre-wrap">' . self::e($response['journal'] ?? '') . '</pre>';
     }
 }

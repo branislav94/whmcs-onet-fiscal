@@ -18,6 +18,7 @@ error_log
 /tests/test-results.txt
 *.zip
 /vendor/
+/dist/
 .DS_Store
 .idea/
 .vscode/

@@ -1,10 +1,13 @@
 # Development phases
 
-## Current checkpoint — v0.1.2
+## Current checkpoint — v0.2.0 candidate
 
 - Manual WHMCS-to-V-PFR sandbox issuance confirmed.
 - Unknown outcome caused by mixed-case identifiers reconciled from the saved response without reissuing.
-- 34 standalone tests cover monetary calculations, validation, duplicate prevention and reconciliation.
+- 40 standalone tests and 9 Capsule/SQLite integration/UI tests cover calculations, isolated test drafts, migration, source-aware locking and reconciliation.
+- Isolated sandbox screen and actionable TLS/payment diagnostics implemented.
+- PHP 8.3/8.4 and MySQL 8 GitHub Actions checks added.
+- Remaining phase-1 acceptance: verify the new screen and upgrade on the user's licensed WHMCS, and review CI results.
 
 ## Phase 1 — Stable sandbox (target v0.2.0)
 

@@ -115,7 +115,7 @@ final class Vsdc implements Transport
         curl_close($ch);
         if ($ok === false || $errno !== 0) {
             // Never log request headers, PAK, passwords or private key material.
-            throw new RuntimeException('V-PFR komunikacija nije završena; cURL kod ' . $errno . '.');
+            throw new RuntimeException(Diagnostics::curl($errno));
         }
         $data = json_decode($body, true);
         return ['code' => $code, 'data' => $data];
@@ -125,14 +125,24 @@ final class Vsdc implements Transport
 final class Store implements Repository
 {
     public const TABLE = 'mod_onetfiskal_invoices';
+    public const TESTS = 'mod_onetfiskal_tests';
     public const GUARD = 'mod_onetfiskal_guard';
 
-    public function __construct(private string $credential = '') {}
+    private string $table;
+
+    public function __construct(private string $credential = '', private string $source = 'invoice')
+    {
+        if (!in_array($source, ['invoice', 'synthetic'], true)) {
+            throw new RuntimeException('Nepoznat izvor računa.');
+        }
+        $this->table = $source === 'synthetic' ? self::TESTS : self::TABLE;
+    }
 
     public static function install(): void
     {
-        if (!Capsule::schema()->hasTable(self::TABLE)) {
-            Capsule::schema()->create(self::TABLE, static function ($t): void {
+        foreach ([self::TABLE, self::TESTS] as $table) {
+          if (!Capsule::schema()->hasTable($table)) {
+            Capsule::schema()->create($table, static function ($t) use ($table): void {
                 $t->engine = 'InnoDB';
                 $t->increments('id');
                 $t->unsignedInteger('invoice_id')->unique();
@@ -145,13 +155,24 @@ final class Store implements Repository
                 $t->unsignedInteger('admin_id')->nullable();
                 $t->dateTime('created_at');
                 $t->dateTime('updated_at');
+                if ($table === self::TESTS) {
+                    $t->string('draft_key', 32)->nullable()->unique();
+                    $t->longText('snapshot')->nullable();
+                }
             });
+          }
         }
         if (!Capsule::schema()->hasTable(self::GUARD)) {
             Capsule::schema()->create(self::GUARD, static function ($t): void {
                 $t->engine = 'InnoDB';
                 $t->unsignedInteger('id')->primary();
                 $t->unsignedInteger('attempt_id')->nullable();
+                $t->string('source', 16)->default('invoice');
+            });
+        }
+        if (!Capsule::schema()->hasColumn(self::GUARD, 'source')) {
+            Capsule::schema()->table(self::GUARD, static function ($t): void {
+                $t->string('source', 16)->default('invoice');
             });
         }
         Capsule::table(self::GUARD)->insertOrIgnore(['id' => 1, 'attempt_id' => null]);
@@ -159,13 +180,17 @@ final class Store implements Repository
 
     public function find(int $invoiceId): ?array
     {
-        $r = Capsule::table(self::TABLE)->where('invoice_id', $invoiceId)->first();
+        $r = Capsule::table($this->table)->where('invoice_id', $invoiceId)->first();
         return $r ? (array) $r : null;
     }
 
     public function queue(int $invoiceId): void
     {
-        Capsule::table(self::TABLE)->insertOrIgnore(['invoice_id' => $invoiceId, 'state' => 'review',
+        if ($this->source === 'synthetic') {
+            if (!$this->find($invoiceId)) { throw new RuntimeException('Sandbox nacrt ne postoji.'); }
+            return;
+        }
+        Capsule::table($this->table)->insertOrIgnore(['invoice_id' => $invoiceId, 'state' => 'review',
             'created_at' => gmdate('Y-m-d H:i:s'), 'updated_at' => gmdate('Y-m-d H:i:s')]);
     }
 
@@ -177,17 +202,17 @@ final class Store implements Repository
             if (!$guard || $guard->attempt_id !== null) {
                 throw new RuntimeException('Drugi zahtev čeka potvrdu ishoda. Prvo ga proveri; novo izdavanje je zaustavljeno.');
             }
-            $row = Capsule::table(self::TABLE)->where('invoice_id', $invoiceId)->lockForUpdate()->first();
+            $row = Capsule::table($this->table)->where('invoice_id', $invoiceId)->lockForUpdate()->first();
             if (!$row || $row->state !== 'review') {
                 throw new RuntimeException('Ova faktura već ima zahtev. Dupli klik je zaustavljen.');
             }
             $requestId = bin2hex(random_bytes(16));
-            Capsule::table(self::TABLE)->where('id', $row->id)->update([
+            Capsule::table($this->table)->where('id', $row->id)->update([
                 'request_id' => $requestId, 'state' => 'sending', 'credential' => $this->credential,
                 'payload' => json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
                 'admin_id' => $adminId, 'message' => 'Zahtev je sačuvan pre slanja.', 'updated_at' => gmdate('Y-m-d H:i:s'),
             ]);
-            Capsule::table(self::GUARD)->where('id', 1)->update(['attempt_id' => $row->id]);
+            Capsule::table(self::GUARD)->where('id', 1)->update(['attempt_id' => $row->id, 'source' => $this->source]);
             return $this->find($invoiceId);
         });
     }
@@ -196,18 +221,44 @@ final class Store implements Repository
     {
         Capsule::connection()->transaction(function () use ($id, $state, $response, $message, $release): void {
             Capsule::table(self::GUARD)->where('id', 1)->lockForUpdate()->first();
-            $row = Capsule::table(self::TABLE)->where('id', $id)->lockForUpdate()->first();
+            $row = Capsule::table($this->table)->where('id', $id)->lockForUpdate()->first();
             if (!$row || $row->state === 'issued') {
                 return;
             }
-            Capsule::table(self::TABLE)->where('id', $id)->update([
+            Capsule::table($this->table)->where('id', $id)->update([
                 'state' => $state, 'response' => json_encode($response, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
                 'message' => $message, 'updated_at' => gmdate('Y-m-d H:i:s'),
             ]);
             if ($release) {
-                Capsule::table(self::GUARD)->where('id', 1)->where('attempt_id', $id)->update(['attempt_id' => null]);
+                Capsule::table(self::GUARD)->where('id', 1)->where('attempt_id', $id)
+                    ->where('source', $this->source)->update(['attempt_id' => null]);
             }
         });
+    }
+
+    public function createSynthetic(array $snapshot, string $draftKey, int $adminId): array
+    {
+        if ($this->source !== 'synthetic' || !preg_match('/^[a-f0-9]{32}$/D', $draftKey)) {
+            throw new RuntimeException('Neispravan identifikator sandbox nacrta.');
+        }
+        // The database unique constraint makes a repeated preview POST return the same draft.
+        $existing = Capsule::table(self::TESTS)->where('draft_key', $draftKey)->first();
+        if (!$existing) {
+            for ($attempt = 0; $attempt < 5; $attempt++) {
+                $key = random_int(1, 2147483647);
+                Capsule::table(self::TESTS)->insertOrIgnore([
+                    'invoice_id' => $key, 'draft_key' => $draftKey,
+                    'snapshot' => json_encode($snapshot, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
+                    'state' => 'review', 'admin_id' => $adminId,
+                    'created_at' => gmdate('Y-m-d H:i:s'), 'updated_at' => gmdate('Y-m-d H:i:s'),
+                ]);
+                $existing = Capsule::table(self::TESTS)->where('draft_key', $draftKey)->first();
+                if ($existing) { break; }
+            }
+        }
+        if (!$existing) { throw new RuntimeException('Sandbox nacrt nije sačuvan. Pokušaj ponovo.'); }
+        if ((int) $existing->admin_id !== $adminId) { throw new RuntimeException('Nacrt pripada drugom administratoru.'); }
+        return (array) $existing;
     }
 
     public static function snapshot(int $invoiceId): array
