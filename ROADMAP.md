@@ -6,12 +6,12 @@ Manual issuance, transfer/card tests, saved response reconciliation and duplicat
 ## Phase 2 — Journal and receipt presentation: v0.3.1 verified
 Read-only journal across both sources, filters and pagination; saved GIF QR; protected HTML/TXT downloads; browser print/Save as PDF; product/version and development installation identity. See [upgrade and acceptance checks](docs/PHASE2-JOURNAL.md). User confirmed the upgraded display; phase 2 PR #3 was merged.
 
-## Phase 3 — Refunds: v0.4.0 candidate
-Manual noncash full/partial refund flow and local test money-return evidence implemented. [First sandbox test and limitations](docs/PHASE3-REFUNDS.md). Awaiting user acceptance of a real sandbox refund.
+## Phase 3 — Refunds: full refund verified, partial sandbox acceptance pending
+Manual noncash full/partial refund flow and local test money-return evidence implemented. [First sandbox test and limitations](docs/PHASE3-REFUNDS.md). User verified full refund -4 of original -3 (1190 RSD) on the official sandbox portal; PR #4 merged. Partial refunds pass automated tests; manual sandbox acceptance is still pending.
 Full/partial refunds, buyer identification and original-receipt references, safe duplicate prevention and sandbox examples. Fiscal correction and bank refund remain separate, linked operations.
 
 ## Phase 4 — Accounting rules: in parallel
-Confirm supply timing for annual hosting, renewal and domains; advance/final documents; domestic business, individual and foreign customer routing, VAT and SEF. Existing accountant policy work remains provisional until reviewed.
+Confirm supply timing for annual hosting, renewal and domains; advance/final documents; domestic business, individual and foreign customer routing, VAT and SEF. [Accounting rules and concrete accountant questions](docs/PHASE4-ACCOUNTING-RULES.md) remain provisional until reviewed.
 
 ## Phase 5 — Complete fiscal document flows
 Implement agreed advances and closing flows, copies, applicable tax, quantities, item catalogue/GTIN and remaining mandatory ESIR functions. Validate the whole applicable checklist rather than assuming current tests establish compliance.
