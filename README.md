@@ -1,3 +1,9 @@
+# ONET Fiskal — v0.3.0 sandbox
+
+Phase 2 adds a searchable, paginated journal across WHMCS invoices and isolated tests; saved V-PFR GIF QR rendering; admin-only standalone HTML/TXT downloads and browser printing / Save as PDF. No new issuance or email automation is enabled.
+
+Upgrade the complete `modules/addons/onetfiskal` directory, including `receipt.php` and the new libraries. Keep private credentials and existing database evidence. Do not deactivate the addon. See [Phase 2 upgrade and acceptance checks](docs/PHASE2-JOURNAL.md) and [Serbian documentation](README-SR.md).
+
 # WHMCS ONET Fiscal
 
 WHMCS fiscalization module for Serbia's eFiskalizacija system, developed for UTG / ONET.

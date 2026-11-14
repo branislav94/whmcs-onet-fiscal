@@ -1,54 +1,27 @@
-# Development phases
+# Development phases — revised sequence
 
-## Current checkpoint — v0.2.0 candidate
+## Phase 1 — Stable sandbox: verified
+Manual issuance, transfer/card tests, saved response reconciliation and duplicate prevention verified on the user's WHMCS. PHP 8.3/8.4 and MySQL CI passed for v0.2.0.
 
-- Manual WHMCS-to-V-PFR sandbox issuance confirmed.
-- Unknown outcome caused by mixed-case identifiers reconciled from the saved response without reissuing.
-- 40 standalone tests and 9 Capsule/SQLite integration/UI tests cover calculations, isolated test drafts, migration, source-aware locking and reconciliation.
-- Isolated sandbox screen and actionable TLS/payment diagnostics implemented.
-- PHP 8.3/8.4 and MySQL 8 GitHub Actions checks added.
-- Remaining phase-1 acceptance: verify the new screen and upgrade on the user's licensed WHMCS, and review CI results.
+## Phase 2 — Journal and receipt presentation: v0.3.0 candidate
+Read-only journal across both sources, filters and pagination; saved GIF QR; protected HTML/TXT downloads; browser print/Save as PDF; product/version and development installation identity. See [upgrade and acceptance checks](docs/PHASE2-JOURNAL.md). Exact WHMCS/theme and real saved QR acceptance remains a user-environment check.
 
-## Phase 1 — Stable sandbox (target v0.2.0)
+## Phase 3 — Refunds
+Full/partial refunds, buyer identification and original-receipt references, safe duplicate prevention and sandbox examples. Fiscal correction and bank refund remain separate, linked operations.
 
-- Improve diagnostics for TLS, certificate, tax and payment mapping errors.
-- Verify CorvusPay and ONET IPS QR flows using synthetic data and the actual recorded payment method.
-- Add an isolated synthetic test-invoice screen so testing does not require altering global WHMCS tax settings.
-- Test the exact supported WHMCS/PHP combinations and database concurrency behavior.
-- Finish when new test invoices consistently reach confirmed issued status and failure cases recover safely.
+## Phase 4 — Accounting rules: in parallel
+Confirm supply timing for annual hosting, renewal and domains; advance/final documents; domestic business, individual and foreign customer routing, VAT and SEF. Existing accountant policy work remains provisional until reviewed.
 
-## Phase 2 — Accounting rules
+## Phase 5 — Complete fiscal document flows
+Implement agreed advances and closing flows, copies, applicable tax, quantities, item catalogue/GTIN and remaining mandatory ESIR functions. Validate the whole applicable checklist rather than assuming current tests establish compliance.
 
-- Agree with the accountant when hosting, domain registration and renewals constitute supply.
-- Specify advance versus final invoices, partial payments, account credit, refunds and customer identification.
-- Define domestic B2C, B2B and foreign customer routing separately.
-- Finish with reviewed examples and expected fiscal documents for each supported business event.
+## Phase 6 — Automation and customer delivery
+Durable processing queue, business-event rules, client access and email delivery with independent delivery retries. Do not reissue when email fails.
 
-## Phase 3 — Complete fiscal document flows
+## Phase 7 — Approval
+Complete technical self-assessment, documentation and evidence; submit for own-use technical and administrative review and address requested changes. Approval is not guaranteed by sandbox success.
 
-- Implement required advance and final invoices with references, refunds and identification.
-- Preserve an auditable chain between WHMCS transactions and fiscal documents.
-- Finish when every agreed scenario passes sandbox validation, including interrupted requests.
+## Phase 8 — Production rollout
+After approval and business setup, production credentials/configuration, correct tax labels, monitoring and backup/recovery procedures; controlled first real receipt and delivery.
 
-## Phase 4 — Automation and customer delivery
-
-- Introduce a durable processing queue and appropriate WHMCS event handling.
-- Keep fiscal issuance status separate from email delivery status.
-- Retry only delivery when email fails; do not generate another fiscal invoice.
-- Display confirmed receipts in the client area and send electronic receipts to test recipients.
-- Finish when the customer receives the correct confirmed receipt once, with safe delivery retries.
-
-## Phase 5 — Accreditation preparation
-
-- Check the current mandatory ESIR requirements and implement missing functions.
-- Prepare user documentation and evidence for own-use approval.
-- Complete the applicable technical and administrative review process.
-
-## Phase 6 — Production rollout
-
-- After approval, configure production certificates, tax labels and business premises.
-- Validate supported production tax and payment mappings.
-- Add monitoring, alerts, backup and operational recovery procedures.
-- Start with a controlled, verified first production invoice and customer delivery.
-
-These phases are plans. They do not imply current production readiness or approval.
+No production issuance is enabled. Phase 2 changes presentation and read-only access, not tax policy or fiscal issuance.

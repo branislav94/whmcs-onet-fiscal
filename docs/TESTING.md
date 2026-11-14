@@ -48,3 +48,7 @@ Select gateway identifiers already configured in `payment_map`. For a QR that on
 ## Validation limits
 
 Local development validation used PHP 8.4.27, 40 standalone tests and 9 SQLite integration/UI tests. GitHub CI supplies actual PHP 8.3/8.4 and MySQL checks. A full licensed-WHMCS smoke test and live sandbox issuance through the new isolated screen must be confirmed on the user's installation. No production fiscalization, advance/refund flow or customer email delivery is enabled.
+
+## v0.3.0 phase 2
+
+Follow [journal, QR, print and authorization acceptance checks](PHASE2-JOURNAL.md). Reuse existing issued receipts; do not create another fiscal transaction merely to test downloads.

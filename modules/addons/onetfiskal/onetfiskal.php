@@ -6,7 +6,7 @@ require_once __DIR__ . '/bootstrap.php';
 function onetfiskal_config(): array
 {
     return [
-        'name' => 'ONET Fiskal — Sandbox', 'version' => '0.2.0', 'author' => 'UTG / ONET',
+        'name' => 'ONET Fiskal — Sandbox', 'version' => \Onet\Fiskal\Product::VERSION, 'author' => 'UTG / ONET',
         'description' => 'Razvojni ESIR modul. PHP 8.3+, RSD, podesiva test VAT stopa 19/20%. Samo sandbox; nema produkcionog izdavanja.',
         'fields' => [
             'configpath' => ['FriendlyName' => 'Privatni config fajl', 'Type' => 'text', 'Size' => '70',

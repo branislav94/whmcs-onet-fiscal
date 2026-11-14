@@ -5,4 +5,6 @@ require_once __DIR__ . '/lib/Core.php';
 require_once __DIR__ . '/lib/Synthetic.php';
 require_once __DIR__ . '/lib/Runtime.php';
 require_once __DIR__ . '/lib/Admin.php';
+require_once __DIR__ . '/lib/Receipt.php';
+require_once __DIR__ . '/lib/Journal.php';
 require_once __DIR__ . '/lib/TestAdmin.php';

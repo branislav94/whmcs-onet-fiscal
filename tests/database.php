@@ -7,6 +7,8 @@ require __DIR__ . '/../modules/addons/onetfiskal/lib/Core.php';
 require __DIR__ . '/../modules/addons/onetfiskal/lib/Synthetic.php';
 require __DIR__ . '/../modules/addons/onetfiskal/lib/Runtime.php';
 require __DIR__ . '/../modules/addons/onetfiskal/lib/Admin.php';
+require __DIR__ . '/../modules/addons/onetfiskal/lib/Receipt.php';
+require __DIR__ . '/../modules/addons/onetfiskal/lib/Journal.php';
 require __DIR__ . '/../modules/addons/onetfiskal/lib/TestAdmin.php';
 
 use WHMCS\Database\Capsule;
@@ -50,7 +52,7 @@ function rejected(callable $f): void {
     throw new RuntimeException('Expected operation to be blocked');
 }
 function resetDatabase(): void {
-    foreach ([Store::GUARD, Store::TABLE, Store::TESTS, 'tblinvoices', 'tblaccounts', 'tblconfiguration'] as $name) {
+    foreach ([Store::GUARD, Store::TABLE, Store::TESTS, 'tbladmins', 'tbladdonmodules', 'tblinvoices', 'tblaccounts', 'tblconfiguration'] as $name) {
         Capsule::schema()->dropIfExists($name);
     }
     Store::install();
@@ -72,6 +74,28 @@ final class DbApi implements Transport {
             'totalAmount' => 1190, 'journal' => 'SANDBOX TEST', 'sdcDateTime' => '2026-11-14T12:00:00+01:00',
             'signature' => 'mock-signature', 'verificationUrl' => 'https://sandbox.suf.purs.gov.rs/v/?vl=test']];
     }
+}
+
+function tinyGif(): string {
+    return 'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+}
+function receiptFixture(int $id): array {
+    return ['invoiceNumber' => 'ABCD1234-Dt1Ov2o0-' . $id,
+        'journal' => "ORIGINAL JOURNAL\n  1.190,00\n", 'sdcDateTime' => '2026-11-14T12:00:00+01:00',
+        'verificationUrl' => 'https://sandbox.suf.purs.gov.rs/v/?vl=test', 'verificationQRCode' => tinyGif()];
+}
+function evidence(string $source, int $id, array $extra = []): void {
+    Capsule::table($source === 'invoice' ? Store::TABLE : Store::TESTS)->insert(array_merge([
+        'invoice_id' => $id, 'state' => 'issued', 'request_id' => str_pad((string) $id, 32, '0', STR_PAD_LEFT),
+        'response' => json_encode(receiptFixture($id), JSON_UNESCAPED_UNICODE),
+        'created_at' => '2026-11-14 12:00:00', 'updated_at' => '2026-11-14 12:00:00'], $extra));
+}
+function accessFixtures(): void {
+    Capsule::schema()->create('tbladmins', function ($t): void { $t->integer('id'); $t->integer('roleid'); $t->integer('disabled'); });
+    Capsule::schema()->create('tbladdonmodules', function ($t): void { $t->string('module'); $t->string('setting'); $t->string('value'); });
+    Capsule::table('tbladmins')->insert([['id' => 1, 'roleid' => 1, 'disabled' => 0],
+        ['id' => 2, 'roleid' => 1, 'disabled' => 1], ['id' => 3, 'roleid' => 2, 'disabled' => 0]]);
+    Capsule::table('tbladdonmodules')->insert(['module' => 'onetfiskal', 'setting' => 'access', 'value' => '1']);
 }
 
 $tests = [];
@@ -175,6 +199,112 @@ $tests['receipt HTML escapes untrusted journal content and rejects non-official 
     equal(false, str_contains($html, 'javascript:'));
     equal(true, str_contains($html, '&lt;img'));
 };
+$tests['journal includes old receipts beyond thirty records and keeps sources distinct'] = function (): void {
+    resetDatabase();
+    for ($i = 1; $i <= 61; $i++) {
+        evidence('invoice', $i, ['created_at' => '2026-01-01 12:00:00']);
+    }
+    evidence('synthetic', 1, ['created_at' => '2026-02-01 12:00:00']);
+    $first = \Onet\Fiskal\Journal::search([]);
+    equal(62, $first['total']); equal(3, $first['pages']); equal(25, count($first['rows']));
+    equal('synthetic', $first['rows'][0]['source']);
+    $last = \Onet\Fiskal\Journal::search(['page' => 3]);
+    equal(12, count($last['rows']));
+    equal(1, (int) $last['rows'][11]['invoice_id']);
+    equal(2, \Onet\Fiskal\Journal::search(['q' => '1'])['total']);
+};
+$tests['journal date bounds are inclusive UTC and status defaults to issued'] = function (): void {
+    resetDatabase();
+    evidence('invoice', 1, ['created_at' => '2026-11-01 00:00:00']);
+    evidence('invoice', 2, ['created_at' => '2026-11-30 23:59:59']);
+    evidence('invoice', 3, ['created_at' => '2026-12-01 00:00:00']);
+    evidence('invoice', 4, ['state' => 'unknown', 'created_at' => '2026-11-02 00:00:00']);
+    equal(2, \Onet\Fiskal\Journal::search(['from' => '2026-11-01', 'to' => '2026-11-30'])['total']);
+    equal(4, \Onet\Fiskal\Journal::search(['state' => 'all'])['total']);
+    equal(1, \Onet\Fiskal\Journal::search(['state' => 'unknown'])['total']);
+};
+$tests['journal filters bind literal text and cannot expand SQL wildcard searches'] = function (): void {
+    resetDatabase(); evidence('invoice', 1); evidence('synthetic', 2);
+    equal(1, \Onet\Fiskal\Journal::search(['source' => 'synthetic'])['total']);
+    equal(1, \Onet\Fiskal\Journal::search(['q' => 'ABCD1234-Dt1Ov2o0-2'])['total']);
+    equal(1, \Onet\Fiskal\Journal::search(['q' => str_pad('1', 32, '0', STR_PAD_LEFT)])['total']);
+    foreach (["%' OR 1=1 --", '%', '_', '!'] as $q) {
+        equal(0, \Onet\Fiskal\Journal::search(['q' => $q])['total']);
+    }
+    foreach ([['source' => 'tbladmins'], ['state' => 'bad'], ['q' => ['x']], ['from' => '2026-02-30'],
+        ['from' => '2026-12-01', 'to' => '2026-11-01'], ['page' => '-1']] as $input) {
+        rejected(fn() => \Onet\Fiskal\Journal::filters($input));
+    }
+};
+$tests['journal escapes response text and supports corrupt saved JSON without crashing'] = function (): void {
+    resetDatabase();
+    evidence('invoice', 1, ['response' => json_encode(['invoiceNumber' => '<script>alert(1)</script>', 'sdcDateTime' => '<img src=x>'])]);
+    evidence('synthetic', 2, ['response' => 'broken json']);
+    ob_start(); try { \Onet\Fiskal\Journal::render(['q' => '<script>']); $html = ob_get_contents(); } finally { ob_end_clean(); }
+    equal(false, str_contains($html, '<script>')); equal(true, str_contains($html, '&lt;script&gt;'));
+    equal(1, \Onet\Fiskal\Journal::search(['page' => 999])['filters']['page']);
+};
+$tests['saved receipt QR uses only validated embedded GIF and preserves original journal'] = function (): void {
+    $response = receiptFixture(1); $response['verificationQRCode'] = tinyGif();
+    $html = \Onet\Fiskal\Receipt::document($response);
+    equal(true, str_contains($html, 'data:image/gif;base64,'));
+    equal(true, str_contains($html, 'Ctrl+P')); equal(true, str_contains($html, 'SANDBOX'));
+    equal(true, str_contains($html, 'white-space:pre;'));
+    equal(true, str_contains($html, "default-src &#039;none&#039;") || str_contains($html, "default-src 'none'"));
+    equal(false, str_contains($html, '<script'));
+    foreach (['data:image/svg+xml,<svg onload=alert(1)>', base64_encode('<svg onload=alert(1)>'), 'not base64', str_repeat('A', 1400001)] as $bad) {
+        equal('', \Onet\Fiskal\Receipt::qr(['verificationQRCode' => $bad]));
+    }
+    $response['verificationQRCode'] = '';
+    equal(true, str_contains(\Onet\Fiskal\Receipt::fragment($response), 'QR kod nedostaje'));
+};
+$tests['export denies anonymous disabled and unauthorized administrators before reading receipts'] = function (): void {
+    resetDatabase(); accessFixtures(); evidence('invoice', 1);
+    foreach ([[], ['adminid' => 2], ['adminid' => 3]] as $session) {
+        $_SESSION = $session;
+        try { \Onet\Fiskal\ReceiptExport::load(['source' => 'invoice', 'id' => 1]); throw new LogicException('Access allowed'); }
+        catch (RuntimeException $e) { equal(403, $e->getCode()); }
+    }
+};
+$tests['authorized exports require issued evidence and never need the current certificate or billing rows'] = function (): void {
+    resetDatabase(); accessFixtures(); $_SESSION = ['adminid' => 1];
+    evidence('invoice', 48); evidence('synthetic', 48);
+    evidence('invoice', 49, ['state' => 'unknown']);
+    Capsule::table(Store::GUARD)->where('id', 1)->update(['attempt_id' => 99]);
+    $before = Capsule::table(Store::TABLE)->get()->toJson();
+    $text = \Onet\Fiskal\ReceiptExport::load(['source' => 'invoice', 'id' => 48, 'format' => 'txt']);
+    equal(receiptFixture(48)['journal'], $text['body']);
+    equal('ONET-sandbox-invoice-48.txt', $text['filename']);
+    equal(true, $text['download']);
+    $html = \Onet\Fiskal\ReceiptExport::load(['source' => 'synthetic', 'id' => 48, 'format' => 'html', 'download' => '1']);
+    equal(true, str_contains($html['body'], '<!doctype html>'));
+    equal(true, $html['download']);
+    foreach ([['source' => 'invoice', 'id' => 49], ['source' => 'invoice', 'id' => 999], ['source' => 'other', 'id' => 48],
+        ['source' => 'invoice', 'id' => '../48'], ['source' => 'invoice', 'id' => 48, 'format' => 'php']] as $input) {
+        rejected(fn() => \Onet\Fiskal\ReceiptExport::load($input));
+    }
+    equal($before, Capsule::table(Store::TABLE)->get()->toJson());
+    equal(99, (int) Capsule::table(Store::GUARD)->value('attempt_id'));
+};
+$tests['issued synthetic receipt remains visible without current private configuration'] = function (): void {
+    resetDatabase(); evidence('synthetic', 48); $_SESSION = ['adminid' => 1];
+    ob_start(); try { TestAdmin::render(null, 48); $html = ob_get_contents(); } finally { ob_end_clean(); }
+    equal(true, str_contains($html, 'ABCD1234-Dt1Ov2o0-48'));
+    equal(true, str_contains($html, 'Preuzmi HTML'));
+    equal(false, str_contains($html, 'synthetic_issue'));
+};
+
+$tests['receipt links resolve from the admin directory and WHMCS subdirectory'] = function (): void {
+    global $CONFIG;
+    $CONFIG = [];
+    equal('../modules/addons/onetfiskal/receipt.php', \Onet\Fiskal\Receipt::endpoint());
+    $CONFIG = ['SystemURL' => 'https://panel.example.test/billing/'];
+    equal('https://panel.example.test/billing/modules/addons/onetfiskal/receipt.php', \Onet\Fiskal\Receipt::endpoint());
+    $CONFIG = ['SystemURL' => 'javascript:alert(1)'];
+    equal('../modules/addons/onetfiskal/receipt.php', \Onet\Fiskal\Receipt::endpoint());
+    $CONFIG = [];
+};
+
 try {
     foreach ($tests as $name => $test) { $test(); echo 'PASS [' . $driver . '] ' . $name . PHP_EOL; }
     echo count($tests) . ' database integration tests passed. No live fiscal requests made.' . PHP_EOL;

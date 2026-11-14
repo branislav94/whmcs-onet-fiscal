@@ -1,8 +1,14 @@
-# ONET Fiskal 0.2.0 — WHMCS sandbox modul
+# ONET Fiskal 0.3.0 — WHMCS sandbox modul
 
 Prva instalaciona razvojna verzija sopstvenog ESIR-a za UTG/ONET. Nema tuđeg fiskalnog servisa: modul šalje zahtev V-PFR sandboxu Poreske uprave Srbije.
 
 **Samo za razvoj i testiranje. Ovo nije odobren ESIR i ne izdaje račune za stvarni promet. Produkcioni endpoint je programski blokiran.**
+
+## Novo u 0.3.0 — žurnal, QR i preuzimanje
+
+Nova faza 2 dodaje objedinjeni žurnal sa pretragom, filterima i stranicama, prikaz sa originalnim QR kodom V-PFR-a, samostalni HTML, originalni TXT i prikaz za štampu / čuvanje u PDF iz browsera. Nema automatskog izdavanja ni slanja mejla.
+
+**Nadogradnja:** prekopiraj ceo `modules/addons/onetfiskal`, uključujući novi `receipt.php` i biblioteke. Ne deaktiviraj modul, ne briši bazu i ne menjaj privatni config. Otvori „Elektronski žurnal” i proveri već izdat račun. Detalji i lista provere: [docs/PHASE2-JOURNAL.md](docs/PHASE2-JOURNAL.md).
 
 ## Novo u 0.2.0 — zaseban sandbox test
 
@@ -140,7 +146,7 @@ Ako OpenSSL ne otvara stari PFX format, poruka u modulu je generička. Administr
 
 U paketu su standalone testovi poslovne logike i state-machine toka sa lažnim V-PFR odgovorima. Pokretanje: `php tests/run.php` uz PHP mbstring. Odvojeno pokreni `php -l` za svaki PHP fajl.
 
-Lokalna validacija autora izvršena je na PHP 8.4 CLI. Kod ne koristi funkcije specifične za 8.4; tačna PHP 8.3/WHMCS verzija korisnika nije bila dostupna. WHMCS nije instaliran u razvojnom okruženju ovog paketa. Dodatih 9 testova proverava stvarni Capsule/SQLite sloj, migracije, izolaciju podataka, pregled UI-a i zajedničko zaključavanje; aktivacija, pristupne uloge i hook prikaz i dalje zahtevaju smoke test u tvojoj razvojnoj instanci. GitHub CI proverava i MySQL 8 i PHP 8.3/8.4. Nije izvršen autentifikovan poziv Poreskoj jer sertifikati nisu dostavljeni. Uspeh sandbox izdavanja tek treba potvrditi na tvom serveru.
+Prvobitna lokalna validacija autora izvršena je na PHP 8.4 CLI. Kod ne koristi funkcije specifične za 8.4; tačna PHP 8.3/WHMCS verzija korisnika nije bila dostupna. WHMCS nije instaliran u razvojnom okruženju ovog paketa. Testovi baze proverava stvarni Capsule/SQLite sloj, migracije, izolaciju podataka, pregled UI-a i zajedničko zaključavanje; aktivacija, pristupne uloge i hook prikaz i dalje zahtevaju smoke test u tvojoj razvojnoj instanci. GitHub CI proverava i MySQL 8 i PHP 8.3/8.4. Nije izvršen autentifikovan poziv Poreskoj jer sertifikati nisu dostavljeni. Naknadno je korisnik potvrdio sandbox izdavanje i verifikaciju na svom serveru u fazi 1. Novi prikaz 0.3.0 još zahteva proveru na tom WHMCS-u.
 
 WHMCS kompatibilnost nije sertifikovana. Testovi ne dokazuju usklađenost ESIR-a niti predstavljaju odobrenje Poreske uprave. Ovo je prvi integracioni korak; kompletan ESIR mora podržati sve obavezne funkcije za odobravanje i sve tokove koje koristiš u poslovanju.
 
@@ -152,4 +158,4 @@ WHMCS kompatibilnost nije sertifikovana. Testovi ne dokazuju usklađenost ESIR-a
 - Poreska razvojni portal i tehnička dokumentacija: https://tap.sandbox.suf.purs.gov.rs/Help/
 - Poreska: POS to SDC Protocol, Create Invoice, Get Status, Get Last Signed Invoice; postupak odobravanja za sopstvenu upotrebu.
 
-Verzija paketa: 0.2.0, 14. novembar 2026.
+Verzija paketa: 0.3.0, 14. novembar 2026.
