@@ -21,7 +21,7 @@ final class Journal
         if (mb_strlen($q) > 120) { throw new RuntimeException('Pretraga može imati najviše 120 znakova.'); }
         $source = (string) ($input['source'] ?? 'all');
         $state = (string) ($input['state'] ?? 'issued');
-        if (!in_array($source, ['all', 'invoice', 'synthetic'], true)
+        if (!in_array($source, ['all', 'invoice', 'synthetic', 'refund'], true)
             || !in_array($state, array_merge(['all'], self::STATES), true)) {
             throw new RuntimeException('Nepoznat izvor ili stanje.');
         }
@@ -49,10 +49,10 @@ final class Journal
     public static function search(array $input): array
     {
         $f = self::filters($input);
-        $sources = $f['source'] === 'all' ? ['invoice', 'synthetic'] : [$f['source']];
+        $sources = $f['source'] === 'all' ? ['invoice', 'synthetic', 'refund'] : [$f['source']];
         $union = null;
         foreach ($sources as $source) {
-            $table = $source === 'invoice' ? Store::TABLE : Store::TESTS;
+            $table = match ($source) { 'invoice' => Store::TABLE, 'synthetic' => Store::TESTS, default => Store::REFUNDS };
             $query = Capsule::table($table)->select(['id', 'invoice_id', 'state', 'request_id', 'response', 'created_at', 'updated_at'])
                 ->selectRaw('? AS source', [$source]);
             if ($f['state'] !== 'all') { $query->where('state', $f['state']); }
@@ -93,7 +93,7 @@ final class Journal
 
     public static function render(array $input): void
     {
-        echo '<h3>Elektronski žurnal — sandbox</h3><p>Obuhvata WHMCS račune i zasebne testove. '
+        echo '<h3>Elektronski žurnal — sandbox</h3><p>Obuhvata prodaje, zasebne testove i refundacije; nije zbirni izveštaj prometa. '
             . 'Datum filtera je datum nastanka evidencije (UTC), a ne PFR datum izdavanja. Bez datuma prikazuje se cela sačuvana istorija.</p>';
         try { self::filters($input); }
         catch (RuntimeException $e) {
@@ -110,7 +110,7 @@ final class Journal
         echo '<form method="get" action="addonmodules.php"><input type="hidden" name="module" value="onetfiskal">'
             . '<input type="hidden" name="view" value="journal"><p><label>Pretraga: ID, PFR broj, RequestId ili tekst odgovora '
             . '<input name="q" maxlength="120" value="' . Admin::e($f['q']) . '"></label></p>';
-        foreach (['source' => ['all' => 'Svi izvori', 'invoice' => 'WHMCS fakture', 'synthetic' => 'Zasebni testovi'],
+        foreach (['source' => ['all' => 'Svi izvori', 'invoice' => 'WHMCS fakture', 'synthetic' => 'Zasebni testovi', 'refund' => 'Refundacije'],
             'state' => array_combine(array_merge(['all'], self::STATES), array_merge(['Sva stanja'], self::STATES))] as $name => $options) {
             echo '<label>' . ($name === 'source' ? 'Izvor ' : 'Stanje ') . '<select name="' . $name . '">';
             foreach ($options as $value => $label) {
@@ -128,10 +128,10 @@ final class Journal
             $id = (int) $row['invoice_id'];
             $source = $row['source'];
             $detail = 'addonmodules.php?module=onetfiskal&amp;'
-                . ($source === 'invoice' ? 'invoiceid=' : 'view=tests&amp;testid=') . $id;
+                . ($source === 'invoice' ? 'invoiceid=' : ($source === 'refund' ? 'view=refunds&amp;refundid=' : 'view=tests&amp;testid=')) . $id;
             $response = json_decode((string) $row['response'], true);
             $response = is_array($response) ? $response : [];
-            echo '<tr><td><a href="' . $detail . '">' . ($source === 'invoice' ? 'WHMCS #' : 'Test #') . $id . '</a></td><td>'
+            echo '<tr><td><a href="' . $detail . '">' . ($source === 'invoice' ? 'WHMCS #' : ($source === 'refund' ? 'Refundacija #' : 'Test #')) . $id . '</a></td><td>'
                 . Admin::e($row['state']) . '</td><td>' . Admin::e(is_scalar($response['invoiceNumber'] ?? null) ? $response['invoiceNumber'] : '')
                 . '<br><small>' . Admin::e($row['request_id']) . '</small></td><td>'
                 . Admin::e(is_scalar($response['sdcDateTime'] ?? null) ? $response['sdcDateTime'] : '') . '</td><td>'

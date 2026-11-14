@@ -78,6 +78,7 @@ final class TestAdmin
                     . Admin::e($row['request_id']) . '</code></p><p>' . Admin::e($row['message']) . '</p>';
                 if ($row['state'] === 'issued') {
                     Admin::receipt(Receipt::decode($row['response']), 'synthetic', $testId);
+                    RefundAdmin::parentPanel('synthetic', $testId);
                 } elseif (in_array($row['state'], ['sending', 'unknown'], true)) {
                     echo Admin::form('synthetic_reconcile', 0, 'Proveri ishod postojećeg testa', self::extra($testId));
                 } elseif ($row['state'] === 'review') {

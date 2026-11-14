@@ -1,8 +1,14 @@
-# ONET Fiskal 0.3.0 — WHMCS sandbox modul
+# ONET Fiskal 0.4.0 — WHMCS sandbox modul
 
 Prva instalaciona razvojna verzija sopstvenog ESIR-a za UTG/ONET. Nema tuđeg fiskalnog servisa: modul šalje zahtev V-PFR sandboxu Poreske uprave Srbije.
 
 **Samo za razvoj i testiranje. Ovo nije odobren ESIR i ne izdaje račune za stvarni promet. Produkcioni endpoint je programski blokiran.**
+
+## Novo u 0.4.0 — ručne sandbox refundacije
+
+Pune i delimične refundacije potvrđenih originalnih test prodaja; originalna cena i poreska oznaka, količine do tri decimale, obavezna test identifikacija i reference. Samo povraćaj na karticu/prenos na račun. Zajedničko zaključavanje i provera zbira sprečavaju prekoračenje originala i duplo izdavanje. Posebno se čuva izmišljena evidencija isplate — bez poziva banci ili izmene WHMCS transakcija.
+
+Prekopiraj **ceo** addon direktorijum bez deaktivacije. Nova tabela refundacija se dodaje automatski, privatna konfiguracija ostaje ista. [Tačni koraci prvog testa i ograničenja](docs/PHASE3-REFUNDS.md).
 
 ## Novo u 0.3.0 — žurnal, QR i preuzimanje
 
@@ -50,7 +56,7 @@ Nadogradi samo `modules/addons/onetfiskal`, bez deaktivacije i bez brisanja tabe
 
 Podržana je test faktura domaćeg fizičkog lica, samo RSD, jedna puna uplata bez korišćenja kredita, sve stavke pozitivne i oporezive podešenom sandbox VAT stopom (19% ili 20%), bez drugog poreza. WHMCS Tax Type mora biti **Exclusive**. Prikazani iznosi prema V-PFR-u uključuju PDV. WHMCS stavka se šalje kao jedna obračunata usluga, količina 1 i ukupan opis perioda/usluge iz fakture.
 
-Namerno su zaustavljeni avansi, konačni računi koji zatvaraju avanse, refundacije, kupci firme/preduzetnici, ino kupci, kredit sa naloga, delimične/više uplata, negativne stavke/popusti i valute osim RSD. Nema javnog prikaza u klijentskoj zoni, automatskog mejla, PDF izmene ili produkcione automatizacije u v0.1.1. Time se izbegava da se test račun dostavi kao stvarni račun kupcu.
+Za originalnu prodaju namerno su zaustavljeni avansi, konačni računi koji zatvaraju avanse, refundirane WHMCS uplate, kupci firme/preduzetnici, ino kupci, kredit sa naloga, delimične/više uplata, negativne stavke/popusti i valute osim RSD. Nema javnog prikaza u klijentskoj zoni, automatskog mejla, PDF izmene ili produkcione automatizacije u v0.1.1. Time se izbegava da se test račun dostavi kao stvarni račun kupcu.
 
 Ako hosting naplaćuješ unapred, to se ne sme u produkciji samo pretvoriti u Promet–Prodaja. Sa knjigovođom prvo odredi trenutak prometa i model avansnog/periodičnog obračuna za hosting i domene. Pre produkcije implementirati i proveriti ceo potreban tok; potrebno je i odobrenje Poreske uprave za sopstvenu upotrebu.
 
@@ -158,4 +164,4 @@ WHMCS kompatibilnost nije sertifikovana. Testovi ne dokazuju usklađenost ESIR-a
 - Poreska razvojni portal i tehnička dokumentacija: https://tap.sandbox.suf.purs.gov.rs/Help/
 - Poreska: POS to SDC Protocol, Create Invoice, Get Status, Get Last Signed Invoice; postupak odobravanja za sopstvenu upotrebu.
 
-Verzija paketa: 0.3.0, 14. novembar 2026.
+Verzija paketa: 0.4.0, 14. novembar 2026.

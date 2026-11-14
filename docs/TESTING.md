@@ -52,3 +52,7 @@ Local development validation used PHP 8.4.27, 40 standalone tests and 9 SQLite i
 ## v0.3.0 phase 2
 
 Follow [journal, QR, print and authorization acceptance checks](PHASE2-JOURNAL.md). Reuse existing issued receipts; do not create another fiscal transaction merely to test downloads.
+
+## v0.4.0 phase 3
+
+Follow [refund acceptance checks](PHASE3-REFUNDS.md). Use fictitious IDs and a saved isolated sandbox sale. Test half then remaining half, original links, refund QR, unknown-outcome reconciliation and independent local money evidence. MySQL CI includes concurrent refund submissions.

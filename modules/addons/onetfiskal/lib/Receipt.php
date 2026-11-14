@@ -7,7 +7,7 @@ use RuntimeException;
 
 final class Product
 {
-    public const VERSION = '0.3.1';
+    public const VERSION = '0.4.0';
 
     public static function information(): string
     {
@@ -116,7 +116,7 @@ final class ReceiptExport
         if (!Admin::allowed()) { throw new RuntimeException('Nemaš pristup modulu.', 403); }
         $source = $input['source'] ?? null;
         $id = $input['id'] ?? null;
-        if (!in_array($source, ['invoice', 'synthetic'], true) || !is_scalar($id)
+        if (!in_array($source, ['invoice', 'synthetic', 'refund'], true) || !is_scalar($id)
             || !preg_match('/^[1-9][0-9]{0,9}$/D', (string) $id) || (int) $id > 2147483647) {
             throw new RuntimeException('Neispravan izvor ili ID računa.', 400);
         }

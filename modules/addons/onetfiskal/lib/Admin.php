@@ -47,11 +47,13 @@ final class Admin
         if (empty($_SESSION['onetfiskal_csrf'])) { $_SESSION['onetfiskal_csrf'] = bin2hex(random_bytes(32)); }
         $id = max(0, (int) ($_POST['invoiceid'] ?? $_GET['invoiceid'] ?? 0));
         $testId = max(0, (int) ($_POST['testid'] ?? $_GET['testid'] ?? 0));
+        $refundId = max(0, (int) ($_POST['refundid'] ?? $_GET['refundid'] ?? 0));
+        $refundView = ($_POST['view'] ?? $_GET['view'] ?? '') === 'refunds' || $refundId > 0;
         $testView = ($_POST['view'] ?? $_GET['view'] ?? '') === 'tests' || $testId > 0;
         echo '<div style="max-width:1100px"><h2>ONET Fiskal <small>' . Product::VERSION . ' · SANDBOX</small></h2>';
         echo '<div class="alert alert-warning"><strong>Razvojno okruženje — računi nisu za stvarni promet.</strong> '
-            . 'Ova verzija izdaje samo test Promet–Prodaja za domaća fizička lica: jedna puna uplata, RSD, podešena sandbox VAT stopa, cene bez poreza u WHMCS-u. '
-            . 'Avansi, refundacije, B2B, kredit sa naloga i automatsko slanje klijentima nisu uključeni.</div>';
+            . 'Ova verzija izdaje test Promet–Prodaja i ručne bezgotovinske refundacije za domaća fizička lica: jedna puna uplata, RSD, podešena sandbox VAT stopa, cene bez poreza u WHMCS-u. '
+            . 'Avansi, B2B, kredit sa naloga i automatsko slanje klijentima nisu uključeni.</div>';
         echo Product::information();
         echo '<style>' . Receipt::styles() . '</style>';
         $config = null;
@@ -67,7 +69,10 @@ final class Admin
                 }
                 if (!$config) { throw new RuntimeException('Prvo podesi konfiguraciju.'); }
                 $action = (string) ($_POST['action'] ?? '');
-                if (str_starts_with($action, 'synthetic_')) {
+                if (str_starts_with($action, 'refund_')) {
+                    $refundView = true;
+                    $refundId = RefundAdmin::handle($action, $config, $refundId);
+                } elseif (str_starts_with($action, 'synthetic_')) {
                     $testView = true;
                     $testId = TestAdmin::handle($action, $config, $testId);
                 } else {
@@ -107,15 +112,23 @@ final class Admin
             echo '</div>';
             return;
         }
+        echo '<p><a class="btn btn-default" href="addonmodules.php?module=onetfiskal&amp;view=refunds">Refundacije</a></p>';
         echo self::form('test', $id, 'Proveri vezu i poresku oznaku', $testView ? '<input type="hidden" name="view" value="tests"><input type="hidden" name="testid" value="' . $testId . '">' : '');
         $guard = Capsule::table(Store::GUARD)->where('id', 1)->first();
         if ($guard && $guard->attempt_id !== null) {
+            $isRefund = ($guard->source ?? 'invoice') === 'refund';
             $synthetic = ($guard->source ?? 'invoice') === 'synthetic';
-            $busyId = Capsule::table($synthetic ? Store::TESTS : Store::TABLE)->where('id', $guard->attempt_id)->value('invoice_id');
-            $target = $synthetic ? 'view=tests&amp;testid=' : 'invoiceid=';
+            $busyId = Capsule::table($isRefund ? Store::REFUNDS : ($synthetic ? Store::TESTS : Store::TABLE))->where('id', $guard->attempt_id)->value('invoice_id');
+            $target = $isRefund ? 'view=refunds&amp;refundid=' : ($synthetic ? 'view=tests&amp;testid=' : 'invoiceid=');
             echo '<div class="alert alert-danger">Novo izdavanje je zaključano dok se ne proveri ishod '
-                . ($synthetic ? 'zasebnog testa ' : 'WHMCS fakture ') . '<a href="addonmodules.php?module=onetfiskal&amp;'
+                . ($isRefund ? 'refundacije ' : ($synthetic ? 'zasebnog testa ' : 'WHMCS fakture ')) . '<a href="addonmodules.php?module=onetfiskal&amp;'
                 . $target . (int) $busyId . '">#' . (int) $busyId . '</a>.</div>';
+        }
+        if ($refundView) {
+            RefundAdmin::render($config, $refundId, (string) ($_POST['parent_source'] ?? $_GET['parent_source'] ?? ''),
+                (int) ($_POST['parent_id'] ?? $_GET['parent_id'] ?? 0));
+            echo '</div>';
+            return;
         }
         if ($testView) {
             TestAdmin::render($config, $testId);
@@ -143,6 +156,7 @@ final class Admin
             if ($saved && $saved['state'] === 'issued') {
                 echo '<h3>Sačuvan račun za WHMCS fakturu #' . $id . '</h3>';
                 self::receipt(Receipt::decode($saved['response']), 'invoice', $id);
+                RefundAdmin::parentPanel('invoice', $id);
                 echo '<details><summary>Sačuvan odgovor V-PFR-a</summary><pre>' . self::e($saved['response']) . '</pre></details>';
                 return;
             }

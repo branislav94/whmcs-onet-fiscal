@@ -11,6 +11,9 @@ require __DIR__ . '/../modules/addons/onetfiskal/lib/Receipt.php';
 require __DIR__ . '/../modules/addons/onetfiskal/lib/Journal.php';
 require __DIR__ . '/../modules/addons/onetfiskal/lib/TestAdmin.php';
 
+require __DIR__ . '/../modules/addons/onetfiskal/lib/Refund.php';
+require __DIR__ . '/../modules/addons/onetfiskal/lib/RefundAdmin.php';
+
 use WHMCS\Database\Capsule;
 use Onet\Fiskal\Builder;
 use Onet\Fiskal\Repository;
@@ -52,7 +55,7 @@ function rejected(callable $f): void {
     throw new RuntimeException('Expected operation to be blocked');
 }
 function resetDatabase(): void {
-    foreach ([Store::GUARD, Store::TABLE, Store::TESTS, 'tbladmins', 'tbladdonmodules', 'tblinvoices', 'tblaccounts', 'tblconfiguration'] as $name) {
+    foreach ([Store::GUARD, Store::TABLE, Store::TESTS, Store::REFUNDS, 'tbladmins', 'tbladdonmodules', 'tblinvoices', 'tblaccounts', 'tblconfiguration'] as $name) {
         Capsule::schema()->dropIfExists($name);
     }
     Store::install();
@@ -304,6 +307,8 @@ $tests['receipt links resolve from the admin directory and WHMCS subdirectory'] 
     equal('../modules/addons/onetfiskal/receipt.php', \Onet\Fiskal\Receipt::endpoint());
     $CONFIG = [];
 };
+
+require __DIR__ . '/refund-cases.php';
 
 try {
     foreach ($tests as $name => $test) { $test(); echo 'PASS [' . $driver . '] ' . $name . PHP_EOL; }

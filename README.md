@@ -1,4 +1,8 @@
-# ONET Fiskal — v0.3.0 sandbox
+# ONET Fiskal — v0.4.0 sandbox
+
+Manual full/partial noncash refunds of saved issued sales, preserving original prices, tax labels and references. Preview, buyer identification, shared fiscal locking, per-item quantity/cent limits, reconciliation and independent local test payment-return evidence. No bank API or WHMCS financial mutation. [Upgrade and first refund test](docs/PHASE3-REFUNDS.md).
+
+## v0.3.0 sandbox foundation
 
 Phase 2 adds a searchable, paginated journal across WHMCS invoices and isolated tests; saved V-PFR GIF QR rendering; admin-only standalone HTML/TXT downloads and browser printing / Save as PDF. No new issuance or email automation is enabled.
 

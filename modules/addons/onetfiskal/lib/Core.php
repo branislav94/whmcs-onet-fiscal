@@ -167,6 +167,13 @@ final class Checks
         } catch (\Throwable) {
             return false;
         }
+        if (($payload['transactionType'] ?? 0) === 1) {
+            if (!in_array($result['invoiceCounterExtension'] ?? '', ['ПР', 'NR'], true)
+                || ($result['invoiceNumber'] ?? '') === ($payload['referentDocumentNumber'] ?? '')
+                || !is_string($result['journal'] ?? null)
+                || !str_contains($result['journal'], (string) $payload['referentDocumentNumber'])
+                || !str_contains($result['journal'], (string) $payload['buyerId'])) { return false; }
+        }
         return $matches && ($result['requestedBy'] ?? '') === $config['expected_uid']
             && preg_match('/^[A-Za-z0-9]{8}-[A-Za-z0-9]{8}-\d+$/D', (string) ($result['invoiceNumber'] ?? '')) === 1
             && !empty($result['journal']) && !empty($result['sdcDateTime'])
@@ -224,6 +231,14 @@ final class Service
             throw new RuntimeException('Zahtev već postoji. Koristi proveru ishoda; ne šalji novi POST.');
         }
         $payload = Builder::build($snapshot, $this->config, 'WHMCS admin ' . $adminId);
+        return $this->submit($invoiceId, $payload, $adminId);
+    }
+
+    /** Persists through the supplied repository before network I/O; refunds use a validating repository. */
+    public function submit(int $invoiceId, array $payload, int $adminId): array
+    {
+        $existing = $this->repo->find($invoiceId);
+        if ($existing && $existing['state'] === 'issued') { return $existing; }
         $this->preflight();
         $row = $this->repo->claim($invoiceId, $payload, $adminId);
         try {
