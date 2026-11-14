@@ -3,10 +3,11 @@
 ## Phase 1 — Stable sandbox: verified
 Manual issuance, transfer/card tests, saved response reconciliation and duplicate prevention verified on the user's WHMCS. PHP 8.3/8.4 and MySQL CI passed for v0.2.0.
 
-## Phase 2 — Journal and receipt presentation: v0.3.0 candidate
-Read-only journal across both sources, filters and pagination; saved GIF QR; protected HTML/TXT downloads; browser print/Save as PDF; product/version and development installation identity. See [upgrade and acceptance checks](docs/PHASE2-JOURNAL.md). Exact WHMCS/theme and real saved QR acceptance remains a user-environment check.
+## Phase 2 — Journal and receipt presentation: v0.3.1 verified
+Read-only journal across both sources, filters and pagination; saved GIF QR; protected HTML/TXT downloads; browser print/Save as PDF; product/version and development installation identity. See [upgrade and acceptance checks](docs/PHASE2-JOURNAL.md). User confirmed the upgraded display; phase 2 PR #3 was merged.
 
-## Phase 3 — Refunds
+## Phase 3 — Refunds: v0.4.0 candidate
+Manual noncash full/partial refund flow and local test money-return evidence implemented. [First sandbox test and limitations](docs/PHASE3-REFUNDS.md). Awaiting user acceptance of a real sandbox refund.
 Full/partial refunds, buyer identification and original-receipt references, safe duplicate prevention and sandbox examples. Fiscal correction and bank refund remain separate, linked operations.
 
 ## Phase 4 — Accounting rules: in parallel
@@ -24,4 +25,4 @@ Complete technical self-assessment, documentation and evidence; submit for own-u
 ## Phase 8 — Production rollout
 After approval and business setup, production credentials/configuration, correct tax labels, monitoring and backup/recovery procedures; controlled first real receipt and delivery.
 
-No production issuance is enabled. Phase 2 changes presentation and read-only access, not tax policy or fiscal issuance.
+No production issuance is enabled. Phase 3 issues only explicitly confirmed sandbox refund documents.

@@ -126,21 +126,22 @@ final class Store implements Repository
 {
     public const TABLE = 'mod_onetfiskal_invoices';
     public const TESTS = 'mod_onetfiskal_tests';
+    public const REFUNDS = 'mod_onetfiskal_refunds';
     public const GUARD = 'mod_onetfiskal_guard';
 
     private string $table;
 
     public function __construct(private string $credential = '', private string $source = 'invoice')
     {
-        if (!in_array($source, ['invoice', 'synthetic'], true)) {
+        if (!in_array($source, ['invoice', 'synthetic', 'refund'], true)) {
             throw new RuntimeException('Nepoznat izvor računa.');
         }
-        $this->table = $source === 'synthetic' ? self::TESTS : self::TABLE;
+        $this->table = match ($source) { 'synthetic' => self::TESTS, 'refund' => self::REFUNDS, default => self::TABLE };
     }
 
     public static function install(): void
     {
-        foreach ([self::TABLE, self::TESTS] as $table) {
+        foreach ([self::TABLE, self::TESTS, self::REFUNDS] as $table) {
           if (!Capsule::schema()->hasTable($table)) {
             Capsule::schema()->create($table, static function ($t) use ($table): void {
                 $t->engine = 'InnoDB';
@@ -155,6 +156,17 @@ final class Store implements Repository
                 $t->unsignedInteger('admin_id')->nullable();
                 $t->dateTime('created_at');
                 $t->dateTime('updated_at');
+                if ($table === self::REFUNDS) {
+                    $t->string('parent_source', 16);
+                    $t->unsignedInteger('parent_id');
+                    $t->index(['parent_source', 'parent_id']);
+                    $t->string('draft_key', 32)->unique();
+                    $t->longText('selection');
+                    $t->string('reason', 300);
+                    $t->string('money_reference', 120)->nullable();
+                    $t->unsignedInteger('money_admin')->nullable();
+                    $t->dateTime('money_recorded_at')->nullable();
+                }
                 if ($table === self::TESTS) {
                     $t->string('draft_key', 32)->nullable()->unique();
                     $t->longText('snapshot')->nullable();
@@ -186,7 +198,7 @@ final class Store implements Repository
 
     public function queue(int $invoiceId): void
     {
-        if ($this->source === 'synthetic') {
+        if ($this->source !== 'invoice') {
             if (!$this->find($invoiceId)) { throw new RuntimeException('Sandbox nacrt ne postoji.'); }
             return;
         }
