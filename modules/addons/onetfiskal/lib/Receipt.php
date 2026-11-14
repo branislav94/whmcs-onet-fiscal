@@ -7,7 +7,7 @@ use RuntimeException;
 
 final class Product
 {
-    public const VERSION = '0.3.0';
+    public const VERSION = '0.3.1';
 
     public static function information(): string
     {
@@ -67,11 +67,11 @@ final class Receipt
 
     public static function styles(): string
     {
-        return '.onet-receipt{background:#fff;color:#111;border:1px solid #ccc;padding:20px;max-width:820px}'
-            . '.onet-journal{font:13px/1.45 monospace;white-space:pre;overflow-x:auto;background:#fff;color:#111;border:0;padding:0}'
+        return '.onet-receipt{box-sizing:border-box;background:#fff;color:#111;border:1px solid #ccc;padding:20px;font:13px/1.45 monospace;width:calc(42ch + 42px);max-width:100%}'
+            . '.onet-journal{font:inherit;white-space:pre;overflow-x:auto;background:#fff;color:#111;border:0;padding:0}'
             . '.onet-qr{display:block;width:45mm;height:45mm;object-fit:contain;image-rendering:pixelated;margin:12px auto}'
             . '.onet-qr-warning{color:#8a3a00}.onet-actions{margin:12px 0}'
-            . '@media print{.onet-no-print{display:none!important}.onet-receipt{border:0;padding:0;max-width:none}'
+            . '@media print{.onet-no-print{display:none!important}.onet-receipt{border:0;padding:0;width:42ch;max-width:100%;font-size:10pt}'
             . '.onet-journal{font-size:10pt;overflow:visible}.onet-qr{break-inside:avoid}a{color:#111}body{margin:12mm}}';
     }
 
