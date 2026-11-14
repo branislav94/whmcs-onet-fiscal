@@ -1,0 +1,23 @@
+# Private fiscal certificates and keys
+*.pfx
+*.p12
+*.pem
+*.key
+*.cer
+*.crt
+/onet-private/
+/config/onetfiskal.php
+/config/*.local.php
+.env
+.env.*
+!.env.example
+
+# Runtime output and generated packages
+*.log
+error_log
+/tests/test-results.txt
+*.zip
+/vendor/
+.DS_Store
+.idea/
+.vscode/
