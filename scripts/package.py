@@ -7,12 +7,12 @@ import zipfile
 
 root = Path(__file__).resolve().parent.parent
 module = root / 'modules/addons/onetfiskal'
-version = re.search(r"'version'\s*=>\s*'([0-9.]+)'", (module / 'onetfiskal.php').read_text()).group(1)
-files = [module / name for name in ['onetfiskal.php', 'bootstrap.php', 'hooks.php',
+version = re.search(r"VERSION\s*=\s*'([0-9.]+)'", (module / 'lib/Receipt.php').read_text()).group(1)
+files = [module / name for name in ['onetfiskal.php', 'bootstrap.php', 'hooks.php', 'receipt.php',
     'lib/Core.php', 'lib/Runtime.php', 'lib/Admin.php', 'lib/Synthetic.php',
-    'lib/TestAdmin.php', 'lib/.htaccess']]
+    'lib/TestAdmin.php', 'lib/Receipt.php', 'lib/Journal.php', 'lib/.htaccess']]
 files += [root / name for name in ['README.md', 'README-SR.md', 'ROADMAP.md',
-    'docs/TESTING.md', 'config/onetfiskal.example.php', 'config/build-ca-bundle.php']]
+    'docs/TESTING.md', 'docs/PHASE2-JOURNAL.md', 'config/onetfiskal.example.php', 'config/build-ca-bundle.php']]
 files = sorted(set(files))
 for path in files:
     if not path.is_file() or path.is_symlink():

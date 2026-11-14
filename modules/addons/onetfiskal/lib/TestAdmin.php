@@ -47,10 +47,12 @@ final class TestAdmin
     {
         echo '<h3>Zaseban sandbox test</h3><p>Izmišljeni podaci čuvaju se u posebnoj evidenciji modula. '
             . 'Ovaj ekran ne pravi WHMCS fakturu ili uplatu, ne aktivira hosting/domen i ne šalje mejl kupcu.</p>';
-        if (!$config) { return; }
+        if ($config) {
         echo '<p>Test stopa: <strong>' . Admin::e($config['vat_rate']) . '%</strong> · Oznaka: <strong>'
             . Admin::e($config['tax_label']) . '</strong> · Valuta: RSD</p>';
+        }
         if ($testId === 0) {
+            if (!$config) { return; }
             $gateways = '';
             foreach ($config['payment_map'] as $name => $type) {
                 if (!is_int($type) || !in_array($type, [0, 1, 2, 3, 4, 5, 6], true)
@@ -75,10 +77,11 @@ final class TestAdmin
                 echo '<h4>Sandbox test #' . $testId . '</h4><p>Stanje: <strong>' . Admin::e($row['state']) . '</strong> · RequestId: <code>'
                     . Admin::e($row['request_id']) . '</code></p><p>' . Admin::e($row['message']) . '</p>';
                 if ($row['state'] === 'issued') {
-                    Admin::receipt(json_decode($row['response'], true, 512, JSON_THROW_ON_ERROR));
+                    Admin::receipt(Receipt::decode($row['response']), 'synthetic', $testId);
                 } elseif (in_array($row['state'], ['sending', 'unknown'], true)) {
                     echo Admin::form('synthetic_reconcile', 0, 'Proveri ishod postojećeg testa', self::extra($testId));
                 } elseif ($row['state'] === 'review') {
+                    if (!$config) { throw new RuntimeException('Prvo podesi konfiguraciju za pregled nacrta.'); }
                     $s = json_decode($row['snapshot'], true, 512, JSON_THROW_ON_ERROR);
                     $payload = Builder::build($s, $config, 'WHMCS admin ' . (int) $_SESSION['adminid']);
                     $payment = $payload['payment'][0];
