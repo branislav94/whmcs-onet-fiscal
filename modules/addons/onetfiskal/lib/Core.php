@@ -44,7 +44,8 @@ final class Builder
         if (!is_numeric($i['taxrate']) || (float) $i['taxrate'] !== (float) $vatRate
             || !is_numeric($i['taxrate2']) || (float) $i['taxrate2'] !== 0.0
             || Money::cents($i['tax2']) !== 0) {
-            throw new RuntimeException('Faktura mora koristiti samo podešenu sandbox VAT stopu: ' . $vatRate . '%.');
+            throw new RuntimeException('Faktura ima stopu ' . (string) $i['taxrate'] . '%, a podešena sandbox VAT stopa je '
+                . $vatRate . '%. Za nezavisan test otvori Zaseban sandbox test; ne menjaj postojeću fakturu.');
         }
         $total = Money::cents($i['total']);
         $net = Money::cents($i['subtotal']);
@@ -60,7 +61,8 @@ final class Builder
         $gateway = (string) $txs[0]['gateway'];
         $method = $config['payment_map'][$gateway] ?? null;
         if (!is_int($method) || !in_array($method, [0, 1, 2, 3, 4, 5, 6], true)) {
-            throw new RuntimeException('Nedostaje mapiranje stvarnog gateway-a u payment_map.');
+            throw new RuntimeException('Gateway "' . $gateway . '" nema celobrojno mapiranje u payment_map. '
+                . 'Primeri: prenos na račun 4, kartica 2. Broj mora biti bez navodnika.');
         }
         if (count($s['items']) < 1 || count($s['items']) > 250) {
             throw new RuntimeException('Podržano je od 1 do 250 stavki.');
@@ -110,6 +112,12 @@ final class Builder
 
 final class Checks
 {
+    public static function reviewHash(array $snapshot, array $config): string
+    {
+        return hash('sha256', json_encode([$snapshot, self::vatRate($config), $config['tax_label'],
+            $config['payment_map'], $config['expected_uid']], JSON_THROW_ON_ERROR));
+    }
+
     public static function vatRate(array $config): int
     {
         $rate = $config['vat_rate'] ?? 20;
@@ -197,7 +205,10 @@ final class Service
     {
         $r = $this->api->request('GET', '/api/v3/status');
         if ($r['code'] !== 200 || !is_array($r['data'])) {
-            throw new RuntimeException('Provera veze nije uspela. HTTP ' . $r['code'] . '. Proveri serverski sertifikat, PAK i CA lanac.');
+            $hint = in_array($r['code'], [401, 403], true)
+                ? ' Proveri da li isti sandbox PFX, njegova lozinka i PAK imaju pristup V-PFR-u.'
+                : ' Očekivan je JSON status. Proveri dostupnost zvaničnog sandbox endpointa.';
+            throw new RuntimeException('Provera veze nije uspela. HTTP ' . $r['code'] . '.' . $hint);
         }
         Checks::status($r['data'], $this->config);
         return $r['data'];

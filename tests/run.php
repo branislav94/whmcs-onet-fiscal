@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 require __DIR__ . '/../modules/addons/onetfiskal/lib/Core.php';
+require __DIR__ . '/../modules/addons/onetfiskal/lib/Synthetic.php';
 require __DIR__ . '/../modules/addons/onetfiskal/lib/Runtime.php';
 
 use Onet\Fiskal\Builder;
@@ -10,6 +11,8 @@ use Onet\Fiskal\Money;
 use Onet\Fiskal\Repository;
 use Onet\Fiskal\Service;
 use Onet\Fiskal\Transport;
+use Onet\Fiskal\Synthetic;
+use Onet\Fiskal\Diagnostics;
 
 $count = 0;
 function test(string $name, callable $fn): void {
@@ -255,5 +258,58 @@ test('production URL is refused by configuration', function (): void {
     $path = tempnam(sys_get_temp_dir(), 'onet-config-'); chmod($path, 0600);
     file_put_contents($path, '<?php return ["environment"=>"production"];');
     try { fails(fn() => Config::load($path)); } finally { unlink($path); }
+});
+function syntheticConfig(): array {
+    return array_merge(config(), ['environment' => 'sandbox', 'vsdc_url' => 'https://vsdc.sandbox.suf.purs.gov.rs',
+        'vat_rate' => 19, 'tax_label' => 'Ж', 'payment_map' => ['corvuspay' => 2, 'onetipsqr' => 4]]);
+}
+test('isolated hosting test uses 19% and actual QR transfer mapping', function (): void {
+    $c = syntheticConfig();
+    $s = Synthetic::snapshot(['net_amount' => '1000.00', 'gateway' => 'onetipsqr', 'scenario' => 'hosting'], $c);
+    same('1190.00', $s['invoice']['total']); same('190.00', $s['invoice']['tax']);
+    $p = Builder::build($s, $c, 'test'); same(4, $p['payment'][0]['paymentType']);
+    same('SANDBOX TEST — hosting — izmišljeni promet', $p['items'][0]['name']);
+});
+test('isolated domain test uses card mapping and ignores client data inputs', function (): void {
+    $c = syntheticConfig();
+    $s = Synthetic::snapshot(['net_amount' => '2000', 'gateway' => 'corvuspay', 'scenario' => 'domain', 'client_email' => 'ignored@example.test'], $c);
+    same('2380.00', $s['invoice']['total']);
+    same(2, Builder::build($s, $c, 'test')['payment'][0]['paymentType']);
+    same(false, array_key_exists('email', $s['client']));
+});
+test('synthetic test rejects production endpoint and invalid inputs', function (): void {
+    $base = ['net_amount' => '1000.00', 'gateway' => 'onetipsqr', 'scenario' => 'hosting'];
+    foreach ([['net_amount' => '0'], ['net_amount' => '-1'], ['net_amount' => '1000000.01'], ['net_amount' => '1,00'],
+        ['gateway' => 'missing'], ['scenario' => 'custom-real-customer']] as $override) {
+        fails(fn() => Synthetic::snapshot(array_merge($base, $override), syntheticConfig()));
+    }
+    $c = syntheticConfig(); $c['environment'] = 'production'; fails(fn() => Synthetic::snapshot($base, $c));
+    $c = syntheticConfig(); $c['vsdc_url'] = 'https://vsdc.suf.purs.gov.rs'; fails(fn() => Synthetic::snapshot($base, $c));
+});
+test('synthetic rounding and twenty-percent compatibility remain exact', function (): void {
+    $c = syntheticConfig();
+    $s = Synthetic::snapshot(['net_amount' => '0.03', 'gateway' => 'corvuspay'], $c);
+    same('0.01', $s['invoice']['tax']); same('0.04', $s['invoice']['total']);
+    $c['vat_rate'] = 20; $c['tax_label'] = 'Ђ';
+    $s = Synthetic::snapshot(['net_amount' => '1000', 'gateway' => 'onetipsqr'], $c);
+    same('1200.00', $s['invoice']['total']);
+});
+test('review hash binds the gateway mapping, label, VAT and UID', function (): void {
+    $c = syntheticConfig(); $s = Synthetic::snapshot(['net_amount' => '1000', 'gateway' => 'onetipsqr'], $c);
+    $h = Checks::reviewHash($s, $c);
+    foreach (['map', 'label', 'rate', 'uid'] as $case) {
+        $changed = $c;
+        if ($case === 'map') { $changed['payment_map']['onetipsqr'] = 6; }
+        if ($case === 'label') { $changed['tax_label'] = 'X'; }
+        if ($case === 'rate') { $changed['vat_rate'] = 20; }
+        if ($case === 'uid') { $changed['expected_uid'] = 'ZZZZ9999'; }
+        same(false, hash_equals($h, Checks::reviewHash($s, $changed)));
+    }
+});
+test('TLS diagnostic is actionable and does not contain credential material', function (): void {
+    $message = Diagnostics::curl(60);
+    same(true, str_contains($message, 'CA bundle'));
+    same(true, str_contains($message, 'cURL 60'));
+    same(false, str_contains($message, 'PRIVATE KEY'));
 });
 echo "\n$count tests passed. No live requests made.\n";

@@ -1,8 +1,18 @@
-# ONET Fiskal 0.1.2 — WHMCS sandbox modul
+# ONET Fiskal 0.2.0 — WHMCS sandbox modul
 
 Prva instalaciona razvojna verzija sopstvenog ESIR-a za UTG/ONET. Nema tuđeg fiskalnog servisa: modul šalje zahtev V-PFR sandboxu Poreske uprave Srbije.
 
 **Samo za razvoj i testiranje. Ovo nije odobren ESIR i ne izdaje račune za stvarni promet. Produkcioni endpoint je programski blokiran.**
+
+## Novo u 0.2.0 — zaseban sandbox test
+
+Preporučeni prvi test sada je **Zaseban sandbox test**, umesto pravljenja i plaćanja test WHMCS faktura. U modulu izaberi scenario hosting/domen, osnovicu (npr. 1000.00) i jedan od gateway-a iz privatne konfiguracije. Klikni **Napravi nacrt i pregledaj zahtev**, proveri iznos/način plaćanja, zatim potvrdi i izdaj izmišljeni sandbox račun. Za test VAT 19% očekuj ukupno 1190.00 RSD. Za običan QR nalog `onetipsqr => 4`, za karticu `corvuspay => 2`.
+
+Ovaj ekran koristi fiksni opis SANDBOX TEST i izmišljeno fizičko lice. Ne kreira WHMCS fakture, uplate, klijente ili hosting/domen, ne menja globalne poreske postavke i ne šalje mejlove. Čuva poseban nacrt i račun u `mod_onetfiskal_tests`. Ponovljen isti POST za pregled vraća isti nacrt; nakon izdavanja nema novog POST-a za isti test.
+
+**Nadogradnja:** sačuvaj rezervnu kopiju modula i njegovih tabela, prekopiraj samo `modules/addons/onetfiskal` i otvori modul. Ne deaktiviraj i ne briši evidenciju. Nadogradnja dodaje novu tabelu i polje `source` u zajedničku tabelu zaključavanja. Postojeće fakture, računi i zaključavanja se čuvaju. Privatni config, PFX i postojeći kombinovani CA bundle ostaju isti. Postojeći nepoznat ishod blokira i zasebne testove dok ga ne proveriš.
+
+Detaljan plan provere: [docs/TESTING.md](docs/TESTING.md). Automatsko izdavanje, avansi, refundacije i slanje kupcima ostaju za kasnije faze.
 
 ## Izmena 0.1.2 — potvrda već izdatog računa
 
@@ -71,7 +81,7 @@ Ako imaš Terminal u cPanelu/SSH, kopiraj i pomoćni `config/build-ca-bundle.php
 php build-ca-bundle.php 'Sandbox SUF RCA.cer' 'Sandbox SUF Issuing CA 1.cer' sandbox-ca-bundle.pem
 ```
 
-Skripta prihvata PEM i DER, proverava da su X.509 sertifikati vremenski važeći i pravi novi PEM fajl. Ne utvrđuje poreklo CA sertifikata; koristi samo fajlove Poreske uprave.
+Skripta prihvata PEM i DER, proverava da su X.509 sertifikati vremenski važeći i pravi novi PEM fajl. Na standardnim Linux serverima dodaje i dostupne sistemske javne CA sertifikate, kako bi provera serverskog TLS sertifikata radila uz sandbox CA. Ako sistemski CA nisu pronađeni, ispisaće to; administrator treba da obezbedi odgovarajući kompletan CA bundle. Ne utvrđuje poreklo CA sertifikata; koristi samo fajlove Poreske uprave.
 
 Bez SSH-a: u Windows Certificate Viewer za svaki CA izaberi **Details → Copy to File → Base-64 encoded X.509 (.CER)**. Sadržaj oba tako izvezena fajla spoji u jedan tekstualni fajl `sandbox-ca-bundle.pem`, sa oba bloka `BEGIN CERTIFICATE`/`END CERTIFICATE`. Postavi privatno na server. Ne isključuj TLS proveru.
 
@@ -130,7 +140,7 @@ Ako OpenSSL ne otvara stari PFX format, poruka u modulu je generička. Administr
 
 U paketu su standalone testovi poslovne logike i state-machine toka sa lažnim V-PFR odgovorima. Pokretanje: `php tests/run.php` uz PHP mbstring. Odvojeno pokreni `php -l` za svaki PHP fajl.
 
-Lokalna validacija autora izvršena je na PHP 8.4 CLI. Kod ne koristi funkcije specifične za 8.4; tačna PHP 8.3/WHMCS verzija korisnika nije bila dostupna. WHMCS nije instaliran u razvojnom okruženju ovog paketa, pa aktivacija, pristupne uloge, hook prikaz i MySQL transakcije zahtevaju smoke test u tvojoj razvojnoj instanci. Nije izvršen autentifikovan poziv Poreskoj jer sertifikati nisu dostavljeni. Uspeh sandbox izdavanja tek treba potvrditi na tvom serveru.
+Lokalna validacija autora izvršena je na PHP 8.4 CLI. Kod ne koristi funkcije specifične za 8.4; tačna PHP 8.3/WHMCS verzija korisnika nije bila dostupna. WHMCS nije instaliran u razvojnom okruženju ovog paketa. Dodatih 9 testova proverava stvarni Capsule/SQLite sloj, migracije, izolaciju podataka, pregled UI-a i zajedničko zaključavanje; aktivacija, pristupne uloge i hook prikaz i dalje zahtevaju smoke test u tvojoj razvojnoj instanci. GitHub CI proverava i MySQL 8 i PHP 8.3/8.4. Nije izvršen autentifikovan poziv Poreskoj jer sertifikati nisu dostavljeni. Uspeh sandbox izdavanja tek treba potvrditi na tvom serveru.
 
 WHMCS kompatibilnost nije sertifikovana. Testovi ne dokazuju usklađenost ESIR-a niti predstavljaju odobrenje Poreske uprave. Ovo je prvi integracioni korak; kompletan ESIR mora podržati sve obavezne funkcije za odobravanje i sve tokove koje koristiš u poslovanju.
 
@@ -142,4 +152,4 @@ WHMCS kompatibilnost nije sertifikovana. Testovi ne dokazuju usklađenost ESIR-a
 - Poreska razvojni portal i tehnička dokumentacija: https://tap.sandbox.suf.purs.gov.rs/Help/
 - Poreska: POS to SDC Protocol, Create Invoice, Get Status, Get Last Signed Invoice; postupak odobravanja za sopstvenu upotrebu.
 
-Verzija paketa: 0.1.2, 14. novembar 2026.
+Verzija paketa: 0.2.0, 14. novembar 2026.

@@ -1,0 +1,11 @@
+{
+  "name": "onet/whmcs-onet-fiscal",
+  "description": "Sandbox-only WHMCS fiscalization module for ONET",
+  "type": "project",
+  "require": {"php": "^8.3", "ext-mbstring": "*"},
+  "require-dev": {"illuminate/database": "^11.0"},
+  "scripts": {
+    "test": ["@php tests/run.php", "@php tests/database.php", "@php tests/cabundle.php"]
+  },
+  "config": {"allow-plugins": false, "sort-packages": true, "platform": {"php": "8.3.0"}}
+}

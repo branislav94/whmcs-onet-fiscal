@@ -2,10 +2,11 @@
 
 WHMCS fiscalization module for Serbia's eFiskalizacija system, developed for UTG / ONET.
 
-**Current version: 0.1.2 — sandbox development only.** This is not an accredited production ESIR. Production endpoints are blocked.
+**Current version: 0.2.0 — sandbox development only.** This is not an accredited production ESIR. Production endpoints are blocked.
 
 ## Current functionality
 
+- Issue a fictitious hosting/domain sandbox receipt from an isolated screen without touching WHMCS invoices, payments or global tax settings.
 - Manually issue a sandbox Normal/Sale invoice from an eligible paid WHMCS invoice.
 - Queue paid invoices for review without automatically fiscalizing them.
 - Connect directly to the Serbian V-PFR sandbox using a private PFX certificate and PAK.
@@ -34,9 +35,14 @@ Run the standalone tests:
 
 ```bash
 php tests/run.php
+
+# With development dependencies installed:
+composer install
+composer test
+python3 scripts/package.py
 ```
 
-34 standalone tests passed locally on PHP 8.4.27. Manual user validation confirmed a sandbox invoice could be issued and subsequently reconciled in WHMCS. This is not a full compatibility, regulatory or production certification. The tests use synthetic data and mocked fiscal responses; they require no fiscal credentials or live network access.
+40 standalone and 9 SQLite integration/UI tests passed locally on PHP 8.4.27. GitHub Actions checks PHP 8.3/8.4 and MySQL 8. See [docs/TESTING.md](docs/TESTING.md). Manual user validation confirmed a sandbox invoice could be issued and subsequently reconciled in WHMCS. This is not a full compatibility, regulatory or production certification. The tests use synthetic data and mocked fiscal responses; they require no fiscal credentials or live network access.
 
 ## Development
 
