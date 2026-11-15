@@ -50,7 +50,7 @@ final class Pdf
         $pdf->SetTextColor(40, 48, 59); $pdf->SetFontSize(9);
         $pdf->MultiCell($width, 4, 'Test dokument: ' . (string) ($response['invoiceNumber'] ?? ''), 0, 'L'); $pdf->Ln(3);
         if (in_array($response['invoiceCounterExtension'] ?? '', ['КП', 'КР', 'CS', 'CR'], true)) {
-            $pdf->SetFontSize(16); $pdf->MultiCell($width, 8, 'ОВО НИЈЕ ФИСКАЛНИ РАЧУН', 0, 'L'); $pdf->Ln(3);
+            $pdf->SetFontSize($size * 2); $pdf->MultiCell($width, $size * 0.8, 'ОВО НИЈЕ ФИСКАЛНИ РАЧУН', 0, 'L'); $pdf->Ln(3);
         }
         $pdf->SetFontSize($size); $pdf->SetTextColor(0, 0, 0);
         foreach ($lines as $line) { $pdf->Cell($width, $size * 0.39, $line, 0, 1, 'L', false, '', 0, false, 'T', 'M'); }
