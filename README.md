@@ -1,4 +1,7 @@
-# ONET Fiskal — v0.9.0 sandbox
+# ONET Fiskal — v0.10.0 sandbox
+
+Server PDF export and preview attachment use the saved journal, original QR image and advance notes, with bundled DejaVu Sans Mono font assets and the WHMCS TCPDF engine. Includes Cyrillic, aligned amounts, multi-page rendering and prominent copy markings. HTML email preview now uses a verification button; plain text retains the full URL. No email sending or new fiscal request. [PDF upgrade and acceptance checks](docs/PHASE6-PDF.md).
+
 
 Administrator-only customer-delivery preview: resolve the original WHMCS client's email, preview sandbox HTML/text messages and exact saved HTML/TXT attachments. Internal advance closing documents and their copies are excluded. No mail transport, delivery queue writes, public client access or server-generated PDF is enabled. [Phase 6 preview and upgrade guide](docs/PHASE6-DELIVERY.md).
 

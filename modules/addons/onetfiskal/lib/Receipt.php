@@ -7,7 +7,7 @@ use RuntimeException;
 
 final class Product
 {
-    public const VERSION = '0.9.0';
+    public const VERSION = '0.10.0';
 
     public static function information(): string
     {
@@ -97,8 +97,8 @@ final class Receipt
     public static function links(string $source, int $id): string
     {
         $url = Admin::e(self::endpoint()) . '?source=' . rawurlencode($source) . '&amp;id=' . $id;
-        return '<p class="onet-actions"><a class="btn btn-default" target="_blank" rel="noopener noreferrer" href="' . $url
-            . '&amp;format=html">Otvori za štampu / PDF</a> <a class="btn btn-default" href="' . $url
+        return '<p class="onet-actions"><a class="btn btn-primary" href="' . $url . '&amp;format=pdf">Preuzmi PDF</a> <a class="btn btn-default" target="_blank" rel="noopener noreferrer" href="' . $url
+            . '&amp;format=html">Otvori za štampu</a> <a class="btn btn-default" href="' . $url
             . '&amp;format=html&amp;download=1">Preuzmi HTML sa QR kodom</a> <a class="btn btn-default" href="' . $url
             . '&amp;format=txt">Preuzmi originalni tekst</a></p>';
     }
@@ -129,12 +129,14 @@ final class ReceiptExport
             throw new RuntimeException('Neispravan izvor ili ID računa.', 400);
         }
         $format = $input['format'] ?? 'html';
-        if (!in_array($format, ['html', 'txt'], true)) { throw new RuntimeException('Nepoznat format.', 400); }
+        if (!in_array($format, ['html', 'txt', 'pdf'], true)) { throw new RuntimeException('Nepoznat format.', 400); }
         $row = (new Store('', $source))->find((int) $id);
         if (!$row || $row['state'] !== 'issued') { throw new RuntimeException('Potvrđen račun nije pronađen.', 404); }
         $response = Receipt::decode($row['response']);
-        return ['format' => $format, 'download' => ($input['download'] ?? '') === '1' || $format === 'txt',
+        $body = $format === 'pdf' ? Pdf::render($response, Advance::notes($source, $row))
+            : ($format === 'html' ? Receipt::document($response, Advance::notes($source, $row)) : $response['journal']);
+        return ['format' => $format, 'download' => ($input['download'] ?? '') === '1' || in_array($format, ['txt', 'pdf'], true),
             'filename' => 'ONET-sandbox-' . $source . '-' . (int) $id . '.' . $format,
-            'body' => $format === 'html' ? Receipt::document($response, Advance::notes($source, $row)) : $response['journal']];
+            'body' => $body];
     }
 }

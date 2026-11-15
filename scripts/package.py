@@ -9,17 +9,17 @@ root = Path(__file__).resolve().parent.parent
 module = root / 'modules/addons/onetfiskal'
 version = re.search(r"VERSION\s*=\s*'([0-9.]+)'", (module / 'lib/Receipt.php').read_text()).group(1)
 files = [module / name for name in ['onetfiskal.php', 'bootstrap.php', 'hooks.php', 'receipt.php',
-    'assets/admin.css', 'lib/Delivery.php', 'lib/Ui.php', 'lib/Core.php', 'lib/Runtime.php', 'lib/Admin.php', 'lib/Synthetic.php',
+    'assets/admin.css', 'assets/fonts/dejavusansmono.php', 'assets/fonts/dejavusansmono.z', 'assets/fonts/dejavusansmono.ctg.z', 'assets/fonts/LICENSE-DejaVu.txt', 'lib/Delivery.php', 'lib/Pdf.php', 'lib/PdfEngine.php', 'lib/Ui.php', 'lib/Core.php', 'lib/Runtime.php', 'lib/Admin.php', 'lib/Synthetic.php',
     'lib/TestAdmin.php', 'lib/Receipt.php', 'lib/Journal.php', 'lib/Refund.php', 'lib/RefundAdmin.php', 'lib/Copy.php', 'lib/CopyAdmin.php', 'lib/Advance.php', 'lib/AdvanceAdmin.php', 'lib/.htaccess']]
 files += [root / name for name in ['README.md', 'README-SR.md', 'ROADMAP.md',
-    'docs/PHASE6-DELIVERY.md', 'docs/UI-GUIDE.md', 'docs/UI-PREVIEW.html', 'docs/TESTING.md', 'docs/PHASE2-JOURNAL.md', 'docs/PHASE3-REFUNDS.md', 'docs/PHASE5-COPIES.md', 'docs/PHASE5-ADVANCES.md', 'config/onetfiskal.example.php', 'config/build-ca-bundle.php']]
+    'docs/PHASE6-PDF.md', 'docs/PHASE6-DELIVERY.md', 'docs/UI-GUIDE.md', 'docs/UI-PREVIEW.html', 'docs/TESTING.md', 'docs/PHASE2-JOURNAL.md', 'docs/PHASE3-REFUNDS.md', 'docs/PHASE5-COPIES.md', 'docs/PHASE5-ADVANCES.md', 'config/onetfiskal.example.php', 'config/build-ca-bundle.php']]
 files = sorted(set(files))
 for path in files:
     if not path.is_file() or path.is_symlink():
         raise RuntimeError(f'Unexpected package input: {path}')
     if path.suffix.lower() in {'.pfx', '.p12', '.pem', '.key', '.cer', '.crt'}:
         raise RuntimeError('Credential file rejected')
-    if '-----BEGIN PRIVATE KEY-----' in path.read_text() or '-----BEGIN RSA PRIVATE KEY-----' in path.read_text():
+    if b'-----BEGIN PRIVATE KEY-----' in path.read_bytes() or b'-----BEGIN RSA PRIVATE KEY-----' in path.read_bytes():
         raise RuntimeError('Private key material rejected')
 dist = root / 'dist'
 dist.mkdir(exist_ok=True)

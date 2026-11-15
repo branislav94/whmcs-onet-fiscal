@@ -80,3 +80,7 @@ Database coverage checks multi-source counts and unknown-outcome prioritization 
 ## v0.9.0 delivery preview
 
 Five database cases cover administrator ACL/state validation, exact original-customer resolution despite caller-supplied overrides, matching protected-export attachment bytes and unchanged evidence/locks, refund/copy parent traversal, internal AR/copy exclusion, synthetic/final test recipients, metadata escaping, email injection rejection and missing QR warnings. No mail, queue or fiscal transport is called by preview generation.
+
+## v0.10.0 server PDF
+
+`tests/pdf.php` renders actual PDFs, extracts text/images with Poppler, verifies Serbian Cyrillic/Latin and amount text, exact pixel equivalence with the saved GIF QR, deterministic output, copy warnings, long journals/notes and explicit rejection of incomplete/unreadably wide inputs. It uses a fictitious JSON fixture; only fixture creation generates a QR. Runtime PDF rendering never generates a barcode. PHP GD, Poppler and the dev-only locked TCPDF package are required for tests. Delivery integration now compares the PDF attachment with the authenticated PDF export and verifies the HTML button/plain-text URL distinction.

@@ -26,11 +26,14 @@ $tests['delivery preview resolves exact WHMCS recipient and preserves attachment
     equal('buyer@example.test', $p['recipient']); equal(12, $p['client_id']); equal(true, $p['recipient_valid']); equal(false, $p['send_enabled']);
     equal(true, str_contains($p['subject'], '[SANDBOX]')); equal(true, str_contains($p['subject'], 'UTG-2026-048'));
     foreach ($p['attachments'] as $a) {
-        $format = str_ends_with($a['name'], '.html') ? 'html' : 'txt';
+        $format = pathinfo($a['name'], PATHINFO_EXTENSION);
         equal(\Onet\Fiskal\ReceiptExport::load(['source' => 'invoice', 'id' => 48, 'format' => $format])['body'], $a['body']);
         equal(hash('sha256', $a['body']), $a['sha256']);
     }
     equal(false, str_contains($p['html'], 'addonmodules.php')); equal(false, str_contains($p['html'], 'receipt.php'));
+    equal(true, $p['pdf_valid']); equal(true, str_contains($p['html'], '>Proveri račun</a>'));
+    equal(false, str_contains($p['html'], 'Provera test dokumenta: https://'));
+    equal(true, str_contains($p['text'], 'Provera test dokumenta: https://'));
     equal($before, (new \Onet\Fiskal\Store())->find(48)); equal(99, (int) \WHMCS\Database\Capsule::table(\Onet\Fiskal\Store::GUARD)->value('attempt_id'));
 };
 $tests['refund and copy preview inherit recipient from the original WHMCS invoice'] = function () use ($config, $snapshot): void {
