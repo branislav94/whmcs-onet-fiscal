@@ -22,14 +22,28 @@ final class Admin
         return $role && in_array((string) $role, explode(',', $access), true);
     }
 
-    public static function form(string $action, int $invoiceId, string $label, string $extra = ''): string
+    public static function form(string $action, int $invoiceId, string $label, string $extra = '', string $tone = ''): string
     {
-        return '<form method="post" action="addonmodules.php?module=onetfiskal&amp;invoiceid=' . $invoiceId . '" style="display:inline-block;margin:8px 8px 8px 0">'
+        $issuing = $action === 'issue' || str_ends_with($action, '_issue');
+        $reconcile = $action === 'reconcile' || str_ends_with($action, '_reconcile');
+        $money = str_ends_with($action, '_money');
+        if ($tone === '') { $tone = $issuing ? 'issue' : ($money ? 'success' : ($reconcile || $action === 'test' ? 'quiet' : 'primary')); }
+        if (!in_array($tone, ['primary', 'issue', 'close', 'refund', 'quiet', 'success'], true)) { $tone = 'primary'; }
+        $hint = $issuing ? 'Šalje novi test dokument Poreskoj.' : ($reconcile ? 'Proverava postojeći zahtev. Ne izdaje novi dokument.'
+            : ($money ? 'Samo evidencija. Ne šalje nalog banci.' : ($action === 'test' ? 'Provera sertifikata, veze i poreske oznake.' : 'Sledi pregled i potvrda. Dokument se još ne šalje.')));
+        return '<form class="of-form" data-phase="' . ($issuing ? 'issue' : ($reconcile ? 'reconcile' : 'preview')) . '" method="post" action="addonmodules.php?module=onetfiskal&amp;invoiceid=' . $invoiceId . '">'
             . (function_exists('generate_token') ? generate_token('form') : '')
-            . '<input type="hidden" name="onet_token" value="' . self::e($_SESSION['onetfiskal_csrf']) . '">'
+            . '<input type="hidden" name="onet_token" value="' . self::e($_SESSION['onetfiskal_csrf'] ?? '') . '">'
             . '<input type="hidden" name="action" value="' . self::e($action) . '">'
             . '<input type="hidden" name="invoiceid" value="' . $invoiceId . '">'
-            . $extra . '<button class="btn btn-primary" type="submit">' . self::e($label) . '</button></form>';
+            . $extra . '<div class="of-form-footer"><button class="of-button of-button--' . $tone . '" type="submit">'
+            . self::e($label) . '</button><span class="of-form-hint">' . self::e($hint) . '</span></div></form>';
+    }
+
+    private static function end(): void
+    {
+        echo '<footer class="of-footer"><span>ONET Fiskal · ' . Product::VERSION . ' · Samo razvojno okruženje</span></footer>';
+        echo Product::information() . '</div>';
     }
 
     public static function render(array $vars): void
@@ -54,12 +68,10 @@ final class Admin
         $refundId = max(0, (int) ($_POST['refundid'] ?? $_GET['refundid'] ?? 0));
         $refundView = ($_POST['view'] ?? $_GET['view'] ?? '') === 'refunds' || $refundId > 0;
         $testView = ($_POST['view'] ?? $_GET['view'] ?? '') === 'tests' || $testId > 0;
-        echo '<div style="max-width:1100px"><h2>ONET Fiskal <small>' . Product::VERSION . ' · SANDBOX</small></h2>';
-        echo '<div class="alert alert-warning"><strong>Razvojno okruženje — računi nisu za stvarni promet.</strong> '
-            . 'Ova verzija izdaje test Promet–Prodaja i ručne bezgotovinske refundacije za domaća fizička lica: jedna puna uplata, RSD, podešena sandbox VAT stopa, cene bez poreza u WHMCS-u. '
-            . 'Automatski obračun avansa za stvarne usluge, B2B, kredit sa naloga i automatsko slanje klijentima nisu uključeni.</div>';
-        echo Product::information();
-        echo '<style>' . Receipt::styles() . '</style>';
+        echo '<div class="onet-fiscal" id="onet-fiscal"><style>' . Ui::styles() . Receipt::styles() . '</style>';
+        echo '<header class="of-header"><div class="of-brand"><span class="of-brandmark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg></span><div>'
+            . '<h2>ONET Fiskal</h2><p>WHMCS · računi i fiskalni dokumenti</p></div></div>' . Ui::badge('sandbox') . '</header>';
+        echo Ui::note('Test okruženje', 'Dokumenti nisu za stvarni promet. Koristi izmišljene podatke; slanje kupcima i produkcija nisu uključeni.', 'sandbox');
         $config = null;
         try {
             $config = Config::load((string) ($vars['configpath'] ?? ''));
@@ -114,18 +126,14 @@ final class Admin
                 echo '<div class="alert alert-danger">' . self::e($e->getMessage()) . '</div>';
             }
         }
-        echo '<p><a class="btn btn-default" href="addonmodules.php?module=onetfiskal">WHMCS fakture</a> '
-            . '<a class="btn btn-default" href="addonmodules.php?module=onetfiskal&amp;view=tests">Zaseban sandbox test</a></p>';
-        echo '<p><a class="btn btn-default" href="addonmodules.php?module=onetfiskal&amp;view=journal">Elektronski žurnal</a></p>';
-        if (($_GET['view'] ?? '') === 'journal' && ($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
-            Journal::render($_GET);
-            echo '</div>';
-            return;
-        }
-        echo '<p><a class="btn btn-default" href="addonmodules.php?module=onetfiskal&amp;view=refunds">Refundacije</a></p>';
-        echo '<p><a class="btn btn-default" href="addonmodules.php?module=onetfiskal&amp;view=copies">Kopije</a></p>';
-        echo '<p><a class="btn btn-default" href="addonmodules.php?module=onetfiskal&amp;view=advances">Avansi</a></p>';
-        echo self::form('test', $id, 'Proveri vezu i poresku oznaku', $testView ? '<input type="hidden" name="view" value="tests"><input type="hidden" name="testid" value="' . $testId . '">' : '');
+        $active = $advanceView ? 'advances' : ($copyView ? 'copies' : ($refundView ? 'refunds' : ($testView ? 'tests' : (($_POST['view'] ?? $_GET['view'] ?? '') === 'journal' ? 'journal' : 'invoices'))));
+        echo Ui::nav($active);
+        $context = '<input type="hidden" name="view" value="' . self::e($active) . '">'
+            . '<input type="hidden" name="testid" value="' . $testId . '"><input type="hidden" name="refundid" value="' . $refundId . '">'
+            . '<input type="hidden" name="copyid" value="' . $copyId . '"><input type="hidden" name="advanceid" value="' . $advanceId . '">'
+            . '<input type="hidden" name="groupid" value="' . max(0, (int) ($_POST['groupid'] ?? $_GET['groupid'] ?? 0)) . '">';
+        echo '<div class="of-toolbar"><span class="of-muted">' . ($config ? 'Konfiguracija je učitana · RSD · Sandbox VAT ' . self::e($config['vat_rate']) . '%' : 'Potrebno je podesiti privatnu konfiguraciju') . '</span><div class="of-actions">'
+            . self::form('test', $id, 'Proveri vezu', $context, 'quiet') . '</div></div>';
         $guard = Capsule::table(Store::GUARD)->where('id', 1)->first();
         if ($guard && $guard->attempt_id !== null) {
             $source = $guard->source ?? 'invoice';
@@ -135,39 +143,42 @@ final class Admin
             echo '<div class="alert alert-danger">Novo izdavanje je zaključano dok se ne proveri ishod zahteva '
                 . '<a href="' . self::e($target) . '">' . self::e($source) . ' #' . $busyId . '</a>.</div>';
         }
+        if ($active === 'journal') {
+            Journal::render($_GET);
+            self::end();
+            return;
+        }
         if ($advanceView) {
             AdvanceAdmin::render($config, $advanceId, max(0, (int) ($_POST['groupid'] ?? $_GET['groupid'] ?? 0)));
-            echo '</div>';
+            self::end();
             return;
         }
         if ($copyView) {
             CopyAdmin::render($config, $copyId);
-            echo '</div>';
+            self::end();
             return;
         }
         if ($refundView) {
             RefundAdmin::render($config, $refundId, (string) ($_POST['parent_source'] ?? $_GET['parent_source'] ?? ''),
                 (int) ($_POST['parent_id'] ?? $_GET['parent_id'] ?? 0));
-            echo '</div>';
+            self::end();
             return;
         }
         if ($testView) {
             TestAdmin::render($config, $testId);
-            echo '</div>';
+            self::end();
             return;
         }
-        echo '<form method="get" action="addonmodules.php" style="margin:16px 0"><input type="hidden" name="module" value="onetfiskal">'
-            . '<label>WHMCS ID fakture <input type="number" name="invoiceid" min="1" value="' . ($id ?: '') . '" required></label> '
-            . '<button class="btn btn-default">Otvori pregled</button></form>';
         if ($id > 0) {
+            echo '<div class="of-breadcrumb">' . Ui::button('addonmodules.php?module=onetfiskal', '← Radni pregled') . '</div>';
             self::invoice($id, $config);
+        } else {
+            $lookup = '<form class="of-form of-inline-form" method="get" action="addonmodules.php"><input type="hidden" name="module" value="onetfiskal">'
+                . Ui::field('Otvori WHMCS fakturu · interni ID', '<input type="number" name="invoiceid" min="1" placeholder="Npr. 48" required>')
+                . '<button class="of-button of-button--primary">Otvori fakturu →</button></form>';
+            Workbench::render($lookup);
         }
-        echo '<h3>Poslednje evidentirane fakture</h3><table class="table table-striped"><thead><tr><th>Faktura</th><th>Stanje</th><th>Ažurirano (UTC)</th></tr></thead><tbody>';
-        foreach (Capsule::table(Store::TABLE)->orderBy('id', 'desc')->limit(30)->get() as $r) {
-            echo '<tr><td><a href="addonmodules.php?module=onetfiskal&amp;invoiceid=' . (int) $r->invoice_id . '">#'
-                . (int) $r->invoice_id . '</a></td><td>' . self::e($r->state) . '</td><td>' . self::e($r->updated_at) . '</td></tr>';
-        }
-        echo '</tbody></table><p>Plaćanje samo dodaje fakturu u pregled. U ovoj verziji nijedan hook ne izdaje račun automatski.</p></div>';
+        self::end();
     }
 
     private static function invoice(int $id, ?array $config): void
@@ -175,23 +186,22 @@ final class Admin
         try {
             $saved = (new Store())->find($id);
             if ($saved && $saved['state'] === 'issued') {
-                echo '<h3>Sačuvan račun za WHMCS fakturu #' . $id . '</h3>';
+                $numbers = Ui::invoiceNumbers([$id]);
+                echo Ui::heading('Faktura #' . $id, 'Sačuvan test račun. Ponovno otvaranje i preuzimanje ne izdaju novi dokument.', '<div class="of-heading-tags">' . Ui::invoiceTag($numbers[$id] ?? null) . Ui::badge('issued') . '</div>');
+                echo Ui::documentSteps('issued');
                 self::receipt(Receipt::decode($saved['response']), 'invoice', $id);
                 RefundAdmin::parentPanel('invoice', $id);
                 CopyAdmin::parentPanel('invoice', $id);
-                echo '<details><summary>Sačuvan odgovor V-PFR-a</summary><pre>' . self::e($saved['response']) . '</pre></details>';
+                echo Ui::technical('Sačuvan odgovor V-PFR-a', $saved['response']);
                 return;
             }
             $snapshot = Store::snapshot($id);
-            echo '<h3>WHMCS faktura #' . $id . '</h3><p>Status: ' . self::e($snapshot['invoice']['status'])
-                . ' · Ukupno: ' . self::e($snapshot['invoice']['total']) . ' ' . self::e($snapshot['currency']) . '</p>';
-            $gateways = array_column($snapshot['transactions'], 'gateway');
-            echo '<p>Gateway iz transakcija: <code>' . self::e(implode(', ', $gateways)) . '</code></p>';
             $row = (new Store())->find($id);
-            if ($row) {
-                echo '<p>Stanje: <strong>' . self::e($row['state']) . '</strong> · RequestId: <code>' . self::e($row['request_id']) . '</code></p>';
-                echo '<p>' . self::e($row['message']) . '</p>';
-            }
+            echo Ui::heading('WHMCS faktura #' . $id, 'Status u WHMCS-u: ' . $snapshot['invoice']['status'], '<div class="of-heading-tags">' . Ui::invoiceTag($snapshot['invoice']['invoicenum'] ?? null) . ($row ? Ui::badge($row['state']) : '') . '</div>');
+            echo Ui::metrics([['label' => 'Ukupna vrednost fakture', 'value' => Ui::value($snapshot['invoice']['total']), 'unit' => $snapshot['currency'], 'tone' => 'primary']]);
+            $gateways = array_column($snapshot['transactions'], 'gateway');
+            echo '<p class="of-muted">Način plaćanja iz transakcija: <strong>' . self::e(implode(', ', $gateways)) . '</strong></p>';
+            if ($row && $row['message']) { echo '<p>' . self::e($row['message']) . '</p>'; }
             if ($row && $row['state'] === 'issued') {
                 self::receipt(json_decode($row['response'], true, 512, JSON_THROW_ON_ERROR));
             } elseif ($row && in_array($row['state'], ['sending', 'unknown'], true)) {
@@ -199,14 +209,13 @@ final class Admin
             } elseif (!$row || $row['state'] === 'review') {
                 if (!$config) { return; }
                 $payload = Builder::build($snapshot, $config, 'WHMCS admin ' . (int) $_SESSION['adminid']);
-                echo '<h4>Pregled zahteva</h4><pre style="max-height:380px;overflow:auto">'
-                    . self::e(json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)) . '</pre>';
+                echo Ui::documentSteps('review') . Ui::payload($payload);
                 $extra = '<input type="hidden" name="snapshot_hash" value="' . Checks::reviewHash($snapshot, $config) . '">'
-                    . '<p><label><input type="checkbox" name="confirmed" value="yes" required> Potvrđujem: sandbox test izvršenog prometa, bez ranijih avansa; nije račun za stvarnu prodaju.</label></p>';
-                echo self::form('issue', $id, 'Izdaj test Promet–Prodaja', $extra);
+                    . Ui::confirm('confirmed', 'Potvrđujem: sandbox test izvršenog prometa, bez ranijih avansa; nije račun za stvarnu prodaju.');
+                echo Ui::card('Potvrda izdavanja', self::form('issue', $id, 'Potvrdi i izdaj test račun', $extra));
             }
             if ($row && !empty($row['response'])) {
-                echo '<details><summary>Sačuvan odgovor V-PFR-a</summary><pre style="white-space:pre-wrap">' . self::e($row['response']) . '</pre></details>';
+                echo Ui::technical('Sačuvan odgovor V-PFR-a', $row['response']);
             }
         } catch (\Throwable $e) {
             echo '<div class="alert alert-info">' . self::e($e->getMessage()) . '</div>';
@@ -215,9 +224,10 @@ final class Admin
 
     public static function receipt(array $response, string $source = '', int $id = 0, array $notes = []): void
     {
-        echo Receipt::fragment($response, $notes);
-        if (in_array($source, ['invoice', 'synthetic'], true) && $id > 0) {
+        echo '<details class="of-receipt-panel" open><summary>Dokument i QR provera</summary>' . Receipt::fragment($response, $notes);
+        if (in_array($source, ['invoice', 'synthetic', 'refund', 'copy', 'advance'], true) && $id > 0) {
             echo Receipt::links($source, $id);
         }
+        echo '</details>';
     }
 }

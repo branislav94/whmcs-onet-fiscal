@@ -64,3 +64,15 @@ Follow [copy acceptance checks](PHASE5-COPIES.md). Test a copy of an issued sale
 ## v0.6.0 phase 5 advances
 
 Follow [advance, customer return and internal settlement acceptance](PHASE5-ADVANCES.md). Keep customer money returns distinct from internal AR. Verify AP → AR → PP, zero/new topup, restart between AR and PP and protected annotated output. MySQL CI includes a competing return-versus-settlement test.
+
+## v0.7.0 UI workflow checks
+
+`tests/ui-cases.php` runs within the database suite. It checks Serbian currency formatting and output escaping, continuation of an existing advance draft, separate customer-return/settlement actions, the final-document continuation after internal closing, reconciliation-only unknown refunds, and independent money evidence/export links for issued refunds. Existing issue/locking/refund/advance tests remain unchanged except display assertions for formatted totals. No live fiscal or bank calls. Visual acceptance in the installed WHMCS theme: [UI guide](UI-GUIDE.md).
+
+## v0.7.1 invoice identities
+
+Two additional database cases verify an exact single-query batch lookup of assigned WHMCS numbers, blank/deleted IDs, escaping of untrusted number strings, and the invoice list/detail/journal/refund integration. The original saved fiscal response and shared lock remain unchanged.
+
+## v0.8.0 task overview
+
+Database coverage checks multi-source counts and unknown-outcome prioritization without writes or lock changes, explicit empty filters, internal-settlement/final-draft continuation, and selecting the frozen request amount rather than an unconfirmed response amount. Counts query only state columns; detailed payloads are fetched for the displayed page.

@@ -45,8 +45,7 @@ final class TestAdmin
 
     public static function render(?array $config, int $testId): void
     {
-        echo '<h3>Zaseban sandbox test</h3><p>Izmišljeni podaci čuvaju se u posebnoj evidenciji modula. '
-            . 'Ovaj ekran ne pravi WHMCS fakturu ili uplatu, ne aktivira hosting/domen i ne šalje mejl kupcu.</p>';
+        echo Ui::heading('Zasebna test prodaja', 'Izmišljeni podaci, odvojeni od WHMCS faktura i uplata. Bez aktivacije usluga i slanja mejla.');
         if ($config) {
         echo '<p>Test stopa: <strong>' . Admin::e($config['vat_rate']) . '%</strong> · Oznaka: <strong>'
             . Admin::e($config['tax_label']) . '</strong> · Valuta: RSD</p>';
@@ -63,19 +62,21 @@ final class TestAdmin
             if ($gateways === '') {
                 echo '<div class="alert alert-info">Prvo dodaj ispravno celobrojno mapiranje gateway-a u privatni payment_map.</div>';
             } else {
+                echo Ui::steps([['label' => 'Unesi test podatke', 'state' => 'current'], ['label' => 'Proveri i potvrdi'], ['label' => 'Test račun i QR']]);
                 $extra = self::extra(0) . '<input type="hidden" name="draft_key" value="' . bin2hex(random_bytes(16)) . '">'
-                    . '<p><label>Scenario <select name="scenario"><option value="hosting">Test hosting</option><option value="domain">Test domen</option></select></label></p>'
-                    . '<p><label>Osnovica bez poreza (RSD) <input name="net_amount" type="text" inputmode="decimal" value="1000.00" pattern="[0-9]+([.][0-9]{1,2})?" required></label></p>'
-                    . '<p><label>Test način plaćanja <select name="gateway">' . $gateways . '</select></label></p>';
-                echo Admin::form('synthetic_preview', 0, 'Napravi nacrt i pregledaj zahtev', $extra);
-                echo '<p>Ovo dugme samo čuva nacrt. V-PFR se poziva tek kada potvrdiš sledeći pregled.</p>';
+                    . '<div class="of-form-grid">'
+                    . Ui::field('Scenario', '<select name="scenario"><option value="hosting">Test hosting</option><option value="domain">Test domen</option></select>')
+                    . Ui::field('Osnovica bez poreza · RSD', '<input name="net_amount" type="text" inputmode="decimal" value="1000.00" pattern="[0-9]+([.][0-9]{1,2})?" required>', 'Unos sa tačkom: 1000.00. Porez se dodaje prema sandbox stopi.')
+                    . Ui::field('Test način plaćanja', '<select name="gateway">' . $gateways . '</select>') . '</div>';
+                echo Ui::card('Podaci nove test prodaje', Admin::form('synthetic_preview', 0, 'Nastavi na pregled', $extra));
             }
         } else {
             try {
                 $row = (new Store('', 'synthetic'))->find($testId);
                 if (!$row) { throw new RuntimeException('Sandbox test ne postoji.'); }
-                echo '<h4>Sandbox test #' . $testId . '</h4><p>Stanje: <strong>' . Admin::e($row['state']) . '</strong> · RequestId: <code>'
-                    . Admin::e($row['request_id']) . '</code></p><p>' . Admin::e($row['message']) . '</p>';
+                echo Ui::heading('Test prodaja #' . $testId, 'Zasebna sandbox evidencija', Ui::badge($row['state']));
+                echo Ui::documentSteps($row['state']);
+                if ($row['message']) { echo '<p class="of-muted">' . Admin::e($row['message']) . '</p>'; }
                 if ($row['state'] === 'issued') {
                     Admin::receipt(Receipt::decode($row['response']), 'synthetic', $testId);
                     RefundAdmin::parentPanel('synthetic', $testId);
@@ -86,30 +87,26 @@ final class TestAdmin
                     if (!$config) { throw new RuntimeException('Prvo podesi konfiguraciju za pregled nacrta.'); }
                     $s = json_decode($row['snapshot'], true, 512, JSON_THROW_ON_ERROR);
                     $payload = Builder::build($s, $config, 'WHMCS admin ' . (int) $_SESSION['adminid']);
-                    $payment = $payload['payment'][0];
-                    echo '<p>Osnovica: ' . Admin::e($s['invoice']['subtotal']) . ' · Porez: ' . Admin::e($s['invoice']['tax'])
-                        . ' · Ukupno: <strong>' . Admin::e($s['invoice']['total']) . ' RSD</strong> · '
-                        . Admin::e(PaymentLabels::name($payment['paymentType'])) . '</p>';
-                    echo '<pre style="max-height:380px;overflow:auto">' . Admin::e(json_encode($payload,
-                        JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)) . '</pre>';
-                    $extra = self::extra($testId) . '<input type="hidden" name="review_hash" value="' . Checks::reviewHash($s, $config) . '">'
-                        . '<p><label><input type="checkbox" name="confirmed" value="yes" required> Potvrđujem izdavanje izmišljenog sandbox računa; nije za stvarni promet.</label></p>';
-                    echo Admin::form('synthetic_issue', 0, 'Izdaj zaseban sandbox račun', $extra);
+                    echo Ui::card('Proveri iznos i potvrdi izdavanje', Ui::payload($payload)
+                        . Admin::form('synthetic_issue', 0, 'Potvrdi i izdaj test račun', self::extra($testId)
+                        . '<input type="hidden" name="review_hash" value="' . Checks::reviewHash($s, $config) . '">'
+                        . Ui::confirm('confirmed', 'Potvrđujem izdavanje izmišljenog sandbox računa; nije za stvarni promet.')));
+
                 }
                 if (!empty($row['response'])) {
-                    echo '<details><summary>Sačuvan odgovor V-PFR-a</summary><pre style="white-space:pre-wrap">'
-                        . Admin::e($row['response']) . '</pre></details>';
+                    echo Ui::technical('Sačuvan odgovor V-PFR-a', $row['response']);
                 }
+                echo Ui::metadata($row);
             } catch (\Throwable $e) {
                 echo '<div class="alert alert-info">' . Admin::e($e->getMessage()) . '</div>';
             }
             echo '<p><a class="btn btn-default" href="addonmodules.php?module=onetfiskal&amp;view=tests">Novi zaseban test</a></p>';
         }
-        echo '<h4>Evidencija zasebnih testova</h4><table class="table table-striped"><thead><tr><th>Test</th><th>Stanje</th><th>Ažurirano (UTC)</th></tr></thead><tbody>';
+        echo '<h3>Evidencija zasebnih testova</h3><div class="of-table-wrap"><table class="of-table"><thead><tr><th>Test</th><th>Stanje</th><th>Ažurirano (UTC)</th></tr></thead><tbody>';
         foreach (Capsule::table(Store::TESTS)->orderBy('id', 'desc')->limit(30)->get() as $r) {
             echo '<tr><td><a href="addonmodules.php?module=onetfiskal&amp;view=tests&amp;testid=' . (int) $r->invoice_id . '">#'
-                . (int) $r->invoice_id . '</a></td><td>' . Admin::e($r->state) . '</td><td>' . Admin::e($r->updated_at) . '</td></tr>';
+                . (int) $r->invoice_id . '</a></td><td>' . Ui::badge($r->state) . '</td><td>' . Admin::e($r->updated_at) . '</td></tr>';
         }
-        echo '</tbody></table>';
+        echo '</tbody></table></div>';
     }
 }

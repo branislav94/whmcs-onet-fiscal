@@ -94,7 +94,8 @@ final class Journal
 
     public static function render(array $input): void
     {
-        echo '<h3>Elektronski žurnal — sandbox</h3><p>Obuhvata prodaje, zasebne testove, refundacije i kopije; nije zbirni izveštaj prometa. '
+        echo Ui::heading('Elektronski žurnal', 'Pretraga svih dokumenata i postupaka bez novog izdavanja.');
+        echo '<p class="of-muted">Obuhvata prodaje, zasebne testove, refundacije i kopije; nije zbirni izveštaj prometa. '
             . 'Datum filtera je datum nastanka evidencije (UTC), a ne PFR datum izdavanja. Bez datuma prikazuje se cela sačuvana istorija.</p>';
         try { self::filters($input); }
         catch (RuntimeException $e) {
@@ -108,32 +109,36 @@ final class Journal
             return;
         }
         $f = $result['filters'];
-        echo '<form method="get" action="addonmodules.php"><input type="hidden" name="module" value="onetfiskal">'
-            . '<input type="hidden" name="view" value="journal"><p><label>Pretraga: ID, PFR broj, RequestId ili tekst odgovora '
-            . '<input name="q" maxlength="120" value="' . Admin::e($f['q']) . '"></label></p>';
+        $controls = '<form class="of-form" method="get" action="addonmodules.php"><input type="hidden" name="module" value="onetfiskal">'
+            . '<input type="hidden" name="view" value="journal">'
+            . Ui::field('Pretraga dokumenata', '<input name="q" maxlength="120" placeholder="ID, PFR broj ili RequestId" value="' . Admin::e($f['q']) . '">', 'Pretražuje i tekst sačuvanog odgovora V-PFR-a.') . '<div class="of-form-grid">';
         foreach (['source' => ['all' => 'Svi izvori', 'invoice' => 'WHMCS fakture', 'synthetic' => 'Zasebni testovi', 'refund' => 'Refundacije', 'copy' => 'Kopije', 'advance' => 'Avansni postupak'],
-            'state' => array_combine(array_merge(['all'], self::STATES), array_merge(['Sva stanja'], self::STATES))] as $name => $options) {
-            echo '<label>' . ($name === 'source' ? 'Izvor ' : 'Stanje ') . '<select name="' . $name . '">';
+            'state' => ['all' => 'Sva stanja', 'issued' => 'Izdat', 'review' => 'Čeka potvrdu', 'sending' => 'Slanje / provera', 'unknown' => 'Ishod nije potvrđen', 'rejected' => 'Odbijen']] as $name => $options) {
+            $select = '<select name="' . $name . '">';
             foreach ($options as $value => $label) {
-                echo '<option value="' . Admin::e($value) . '"' . ($f[$name] === $value ? ' selected' : '') . '>' . Admin::e($label) . '</option>';
+                $select .= '<option value="' . Admin::e($value) . '"' . ($f[$name] === $value ? ' selected' : '') . '>' . Admin::e($label) . '</option>';
             }
-            echo '</select></label> ';
+            $controls .= Ui::field($name === 'source' ? 'Izvor dokumenta' : 'Status', $select . '</select>');
         }
-        echo '<p><label>Od (UTC) <input type="date" name="from" value="' . Admin::e($f['from']) . '"></label> '
-            . '<label>Do (UTC) <input type="date" name="to" value="' . Admin::e($f['to']) . '"></label></p>'
-            . '<button class="btn btn-primary">Pretraži</button> <a href="addonmodules.php?module=onetfiskal&amp;view=journal">Resetuj</a></form>';
+        $controls .= Ui::field('Evidentirano od · UTC', '<input type="date" name="from" value="' . Admin::e($f['from']) . '">')
+            . Ui::field('Evidentirano do · UTC', '<input type="date" name="to" value="' . Admin::e($f['to']) . '">') . '</div>'
+            . '<div class="of-form-footer"><button class="of-button of-button--primary">Pretraži dokumente</button>'
+            . Ui::button('addonmodules.php?module=onetfiskal&view=journal', 'Resetuj filtere') . '</div></form>';
+        echo Ui::card('Pronađi dokument', $controls, 'Filter datuma koristi nastanak lokalne evidencije, a ne datum izdavanja PFR-a.');
         echo '<p>Ukupno: ' . $result['total'] . ' · Stranica ' . $f['page'] . '/' . $result['pages'] . '</p>'
-            . '<div style="overflow-x:auto"><table class="table table-striped"><thead><tr><th>Izvor / ID</th><th>Stanje</th>'
-            . '<th>PFR broj / RequestId</th><th>PFR vreme (iz odgovora)</th><th>Evidencija (UTC)</th><th>Račun</th></tr></thead><tbody>';
+            . '<div class="of-table-wrap"><table class="of-table"><thead><tr><th>Izvor / ID</th><th>Stanje</th>'
+            . '<th>PFR broj / RequestId</th><th class="of-num">Iznos RSD</th><th>PFR vreme (iz odgovora)</th><th>Evidencija (UTC)</th><th>Račun</th></tr></thead><tbody>';
+        $numbers = Ui::invoiceNumbers(array_column(array_filter($result['rows'], static fn($row) => $row['source'] === 'invoice'), 'invoice_id'));
         foreach ($result['rows'] as $row) {
             $id = (int) $row['invoice_id'];
             $source = $row['source'];
             $detail = Admin::e($source === 'copy' ? CopyAdmin::url($id) : CopyAdmin::originalUrl($source, $id));
             $response = json_decode((string) $row['response'], true);
             $response = is_array($response) ? $response : [];
-            echo '<tr><td><a href="' . $detail . '">' . ($source === 'invoice' ? 'WHMCS #' : ($source === 'refund' ? 'Refundacija #' : ($source === 'copy' ? 'Kopija #' : ($source === 'advance' ? 'Avansni dokument #' : 'Test #')))) . $id . '</a>' . ($source === 'advance' ? '<br><small>' . Admin::e(AdvanceAdmin::LABELS[$row['document_kind']] ?? '') . '</small>' : '') . '</td><td>'
-                . Admin::e($row['state']) . '</td><td>' . Admin::e(is_scalar($response['invoiceNumber'] ?? null) ? $response['invoiceNumber'] : '')
-                . '<br><small>' . Admin::e($row['request_id']) . '</small></td><td>'
+            echo '<tr><td><a href="' . $detail . '">' . ($source === 'invoice' ? 'WHMCS #' : ($source === 'refund' ? 'Refundacija #' : ($source === 'copy' ? 'Kopija #' : ($source === 'advance' ? 'Avansni dokument #' : 'Test #')))) . $id . '</a>' . ($source === 'invoice' ? ' ' . Ui::invoiceTag($numbers[$id] ?? null) : '') . ($source === 'advance' ? '<br><small>' . Admin::e(AdvanceAdmin::LABELS[$row['document_kind']] ?? '') . '</small>' : '') . '</td><td>'
+                . Ui::badge($row['state']) . '</td><td>' . Admin::e(is_scalar($response['invoiceNumber'] ?? null) ? $response['invoiceNumber'] : '')
+                . '<br><small class="of-reference">' . Admin::e($row['request_id']) . '</small></td><td class="of-num">'
+                . (is_scalar($response['totalAmount'] ?? null) ? Ui::value($response['totalAmount']) : '—') . '</td><td>'
                 . Admin::e(is_scalar($response['sdcDateTime'] ?? null) ? $response['sdcDateTime'] : '') . '</td><td>'
                 . Admin::e($row['created_at']) . '</td><td>';
             if ($row['state'] === 'issued') {
@@ -142,7 +147,7 @@ final class Journal
             }
             echo '</td></tr>';
         }
-        if ($result['total'] === 0) { echo '<tr><td colspan="6">Nema rezultata za izabrane filtere.</td></tr>'; }
+        if ($result['total'] === 0) { echo '<tr><td colspan="7">Nema rezultata za izabrane filtere.</td></tr>'; }
         echo '</tbody></table></div><p>';
         if ($f['page'] > 1) { echo '<a class="btn btn-default" href="' . Admin::e(self::url($f, $f['page'] - 1)) . '">Prethodna</a> '; }
         if ($f['page'] < $result['pages']) { echo '<a class="btn btn-default" href="' . Admin::e(self::url($f, $f['page'] + 1)) . '">Sledeća</a>'; }

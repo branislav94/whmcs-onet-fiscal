@@ -1,8 +1,30 @@
-# ONET Fiskal 0.6.0 — WHMCS sandbox modul
+# ONET Fiskal 0.8.0 — WHMCS sandbox modul
 
 Prva instalaciona razvojna verzija sopstvenog ESIR-a za UTG/ONET. Nema tuđeg fiskalnog servisa: modul šalje zahtev V-PFR sandboxu Poreske uprave Srbije.
 
 **Samo za razvoj i testiranje. Ovo nije odobren ESIR i ne izdaje račune za stvarni promet. Produkcioni endpoint je programski blokiran.**
+
+## Novo u 0.8.0 — radni pregled i vidljiv sledeći korak
+
+Početni ekran objedinjuje svih pet izvora: WHMCS fakture, zasebne testove, povraćaje, kopije i avansne dokumente. Prvo prikazuje nepotvrđene/odbijene zahteve, zatim nacrte. Svaki red ima naziv dokumenta, WHMCS vezu, iznos, status i konkretnu radnju za nastavak. Brojači su brojevi dokumenata, ne zbir prometa.
+
+Posebno se ističu potvrđena interna zatvaranja avansa kojima nedostaje nacrt konačnog računa. U pregledu dokumenta veći iznos je u zasebnom sažetku desno; na manjim ekranima ide iznad stavki. Potvrda izdavanja ima izdvojen red sa glavnim dugmetom. Tehnički detalji ostaju sklopljeni, a obračuni, zaštite i sačuvani fiskalni žurnali ne menjaju se.
+
+[Pregled dva ekrana sa izmišljenim podacima](docs/UI-PREVIEW.html). U ovoj datoteci sve finansijske radnje su isključene. Za instalaciju prekopiraj ceo addon iz ZIP-a bez deaktivacije i bez promene privatnog config-a.
+
+## Novo u 0.7.1 — WHMCS broj računa i mirniji prikaz
+
+Uz interni ID prikazuje se oznaka sa stvarnim `tblinvoices.invoicenum`, npr. `#48` i `UTG-2026-048`. Prefiks i broj se ne generišu u dodatku. Kada broj nije dodeljen ili nedostaje WHMCS zapis, ostaje samo ID. Oznake su dostupne u poslednjim fakturama, detalju, žurnalu i vezanoj refundaciji; jedna lista koristi jedan grupni upit.
+
+Dorađeni su tipografija, neutralne površine, kompaktne tabele, oznake statusa i navigacija prema BoardUI smernicama. Ovo je lokalni PHP/CSS prikaz prilagođen WHMCS-u; nema React/Tailwind zavisnosti ili spoljnog učitavanja fontova. Pravila obračuna i izdavanja ostaju ista.
+
+Nadogradnja: prekopiraj ceo `modules/addons/onetfiskal/` iz novog ZIP-a. Privatni config i postojeća evidencija ostaju isti; modul se ne deaktivira.
+
+## Novo u 0.7.0 — čitljiviji interfejs i jasni koraci
+
+Horizontalna navigacija, kartice sa iznosima, statusi na srpskom, numerisani koraci i odvojena dugmad za pregled, izdavanje, proveru ishoda i evidenciju isplate. Povraćaj kupcu i interno zatvaranje avansa imaju zasebne kartice i objašnjenja; posle internog AR-a jasno sledi konačni račun. Tehnički JSON je sklopljen. Originalni fiskalni žurnal ostaje neizmenjen.
+
+Prekopiraj ceo addon, uključujući novi `assets/admin.css` i `lib/Ui.php`. Ne deaktiviraj modul i ne menjaj privatni config ili bazu. Nema nove šeme baze niti automatskog izdavanja, banke ili mejla. [Nadogradnja i vodič kroz interfejs](docs/UI-GUIDE.md).
 
 ## Novo u 0.6.0 — zasebni ručni sandbox avansi
 

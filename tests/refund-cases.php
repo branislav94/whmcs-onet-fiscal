@@ -163,7 +163,7 @@ $tests['refund preview UI has bound confirmation and no bank or live API action'
     $row = (new \Onet\Fiskal\RefundStore($config))->draft('invoice', 48, refundInput(), 1);
     ob_start(); try { \Onet\Fiskal\RefundAdmin::render($config, (int) $row['invoice_id'], '', 0); $html = ob_get_contents(); } finally { ob_end_clean(); }
     equal(true, str_contains($html, 'refund_hash')); equal(true, str_contains($html, 'refund_issue'));
-    equal(true, str_contains($html, '1190 RSD')); equal(true, str_contains($html, 'Ne vraća novac preko banke'));
+    equal(true, str_contains($html, '1.190,00') && str_contains($html, 'RSD')); equal(true, str_contains($html, 'Ne vraća novac preko banke'));
     equal(null, Capsule::table(Store::GUARD)->value('attempt_id'));
 };
 if ($driver === 'mysql') {

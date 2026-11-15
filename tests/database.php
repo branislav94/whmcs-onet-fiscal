@@ -7,6 +7,7 @@ require __DIR__ . '/../modules/addons/onetfiskal/lib/Core.php';
 require __DIR__ . '/../modules/addons/onetfiskal/lib/Synthetic.php';
 require __DIR__ . '/../modules/addons/onetfiskal/lib/Runtime.php';
 require __DIR__ . '/../modules/addons/onetfiskal/lib/Admin.php';
+require __DIR__ . '/../modules/addons/onetfiskal/lib/Ui.php';
 require __DIR__ . '/../modules/addons/onetfiskal/lib/Receipt.php';
 require __DIR__ . '/../modules/addons/onetfiskal/lib/Journal.php';
 require __DIR__ . '/../modules/addons/onetfiskal/lib/TestAdmin.php';
@@ -185,7 +186,7 @@ $tests['sandbox preview UI renders a frozen draft without a live API call'] = fu
         TestAdmin::render($config, $id);
         $html = ob_get_contents();
     } finally { ob_end_clean(); }
-    equal(true, str_contains($html, '1190.00 RSD'));
+    equal(true, str_contains($html, '1.190,00') && str_contains($html, 'RSD'));
     equal(true, str_contains($html, 'Prenos na račun'));
     equal(true, str_contains($html, 'name="review_hash"'));
     equal(true, str_contains($html, 'synthetic_issue'));
@@ -315,6 +316,7 @@ $tests['receipt links resolve from the admin directory and WHMCS subdirectory'] 
 require __DIR__ . '/refund-cases.php';
 require __DIR__ . '/copy-cases.php';
 require __DIR__ . '/advance-cases.php';
+require __DIR__ . '/ui-cases.php';
 
 try {
     foreach ($tests as $name => $test) { $test(); echo 'PASS [' . $driver . '] ' . $name . PHP_EOL; }
