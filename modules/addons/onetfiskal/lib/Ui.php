@@ -174,7 +174,8 @@ final class Workbench
         foreach (['invoice' => Store::TABLE, 'synthetic' => Store::TESTS, 'refund' => Store::REFUNDS, 'copy' => Store::COPIES, 'advance' => Store::ADVANCES] as $source => $table) {
             $q = Capsule::table($table)->select('state');
             if (!$summary) {
-                $q->select(['id', 'invoice_id', 'state', 'response', 'payload', 'snapshot', 'updated_at'])
+                $q->select(['id', 'invoice_id', 'state', 'response', 'payload', 'updated_at'])
+                    ->selectRaw($source === 'synthetic' ? 'snapshot' : 'NULL AS snapshot')
                     ->selectRaw('? AS source', [$source])->selectRaw($source === 'advance' ? 'kind AS kind, group_id AS group_id' : 'NULL AS kind, NULL AS group_id');
             }
             $union = $union ? $union->unionAll($q) : $q;

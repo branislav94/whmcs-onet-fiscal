@@ -96,7 +96,7 @@ $tests['work overview prioritizes unresolved requests across sources and keeps e
     $before = \WHMCS\Database\Capsule::table(\Onet\Fiskal\Store::GUARD)->first();
     $data = \Onet\Fiskal\Workbench::data();
     equal('attention', $data['filter']); equal(1, $data['counts']['attention']); equal(1, $data['counts']['review']); equal(2, $data['counts']['all']);
-    equal('unknown', $data['rows'][0]['state']); equal('invoice', $data['rows'][0]['source']);
+    equal('unknown', $data['rows'][0]['state']); equal('invoice', $data['rows'][0]['source']); equal(null, $data['rows'][0]['snapshot']);
     $all = \Onet\Fiskal\Workbench::data('all'); equal(2, count($all['rows'])); equal('unknown', $all['rows'][0]['state']);
     $issued = \Onet\Fiskal\Workbench::data('issued'); equal('issued', $issued['filter']); equal([], $issued['rows']);
     equal((array) $before, (array) \WHMCS\Database\Capsule::table(\Onet\Fiskal\Store::GUARD)->first()); equal(1, $api->posts);
