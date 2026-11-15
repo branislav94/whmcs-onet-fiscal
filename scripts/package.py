@@ -9,10 +9,10 @@ root = Path(__file__).resolve().parent.parent
 module = root / 'modules/addons/onetfiskal'
 version = re.search(r"VERSION\s*=\s*'([0-9.]+)'", (module / 'lib/Receipt.php').read_text()).group(1)
 files = [module / name for name in ['onetfiskal.php', 'bootstrap.php', 'hooks.php', 'receipt.php',
-    'lib/Core.php', 'lib/Runtime.php', 'lib/Admin.php', 'lib/Synthetic.php',
+    'assets/admin.css', 'lib/Ui.php', 'lib/Core.php', 'lib/Runtime.php', 'lib/Admin.php', 'lib/Synthetic.php',
     'lib/TestAdmin.php', 'lib/Receipt.php', 'lib/Journal.php', 'lib/Refund.php', 'lib/RefundAdmin.php', 'lib/Copy.php', 'lib/CopyAdmin.php', 'lib/Advance.php', 'lib/AdvanceAdmin.php', 'lib/.htaccess']]
 files += [root / name for name in ['README.md', 'README-SR.md', 'ROADMAP.md',
-    'docs/TESTING.md', 'docs/PHASE2-JOURNAL.md', 'docs/PHASE3-REFUNDS.md', 'docs/PHASE5-COPIES.md', 'docs/PHASE5-ADVANCES.md', 'config/onetfiskal.example.php', 'config/build-ca-bundle.php']]
+    'docs/UI-GUIDE.md', 'docs/TESTING.md', 'docs/PHASE2-JOURNAL.md', 'docs/PHASE3-REFUNDS.md', 'docs/PHASE5-COPIES.md', 'docs/PHASE5-ADVANCES.md', 'config/onetfiskal.example.php', 'config/build-ca-bundle.php']]
 files = sorted(set(files))
 for path in files:
     if not path.is_file() or path.is_symlink():

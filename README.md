@@ -1,4 +1,8 @@
-# ONET Fiskal — v0.6.0 sandbox
+# ONET Fiskal — v0.7.0 sandbox
+
+Scoped WHMCS addon redesign: readable Serbian currency summaries, numbered workflow steps, clear preview/issue/reconcile actions, and separate customer-return versus internal-advance-settlement paths. Existing financial handlers, locking, authorization and saved receipt journals are preserved. Upgrade the entire addon including `assets/admin.css` and `lib/Ui.php`; no new database schema or private-config changes. [UI guide and upgrade checklist](docs/UI-GUIDE.md).
+
+## v0.6.0 foundation
 
 Manual fictitious advance orders: Advance/Sale, customer returns, separate internal Advance/Refund settlement and a final Normal/Sale with only the new top-up payment. Durable group evidence and shared locking support recovery between settlement and final issuance. Includes advance annotations, protected exports, copies and ordinary final-sale refunds. No production, banking, WHMCS order mutation or email automation. [Upgrade and exact acceptance cases](docs/PHASE5-ADVANCES.md).
 
