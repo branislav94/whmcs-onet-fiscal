@@ -245,13 +245,13 @@ final class Workbench
             $url = $source === 'copy' ? CopyAdmin::url($id) : CopyAdmin::originalUrl($source, $id);
             $title = match ($source) { 'invoice' => 'WHMCS faktura', 'synthetic' => 'Test prodaja', 'refund' => 'Povraćaj kupcu', 'copy' => 'Kopija dokumenta', default => AdvanceAdmin::LABELS[$row['kind']] ?? 'Avansni dokument' };
             $action = match ($state) { 'unknown', 'sending' => 'Proveri ishod →', 'review' => 'Pregledaj i nastavi →', 'rejected' => 'Pogledaj razlog →', default => 'Otvori dokument →' };
-            $response = json_decode((string) $row['response'], true);
+            $response = json_decode((string) $row['response'], true); $amount = self::amount($row);
             echo '<tr class="of-work-row of-work-row--' . Admin::e($state) . '"><td><a class="of-row-title" href="' . Admin::e($url) . '">' . Admin::e($title) . '</a><small>ID #' . $id . ' · ' . Admin::e($row['updated_at']) . ' UTC</small></td><td>';
             if ($source === 'invoice') { echo Ui::invoiceIdentity($id, $numbers[$id] ?? null); }
             elseif ($source === 'advance') { echo '<span class="of-invoice-tag">Porudžbina #' . (int) $row['group_id'] . '</span>'; }
             else { echo '<span class="of-muted">' . ($source === 'synthetic' ? 'Zaseban test' : 'Referenca u dokumentu') . '</span>'; }
-            if (is_string($response['invoiceNumber'] ?? null)) { echo '<small class="of-reference">' . Admin::e($response['invoiceNumber']) . '</small>'; }
-            echo '</td><td class="of-num">' . self::amount($row) . (self::amount($row) === '—' ? '<small>Proverava se na pregledu</small>' : '') . '</td><td>' . Ui::badge($state) . '</td><td>' . Ui::button($url, $action, in_array($state, ['unknown', 'sending', 'rejected'], true) ? 'refund' : ($state === 'review' ? 'primary' : 'quiet')) . '</td></tr>';
+            if ($state === 'issued' && is_string($response['invoiceNumber'] ?? null)) { echo '<small class="of-reference">' . Admin::e($response['invoiceNumber']) . '</small>'; }
+            echo '</td><td class="of-num">' . $amount . ($amount === '—' ? '<small>Proverava se na pregledu</small>' : '') . '</td><td>' . Ui::badge($state) . '</td><td>' . Ui::button($url, $action, in_array($state, ['unknown', 'sending', 'rejected'], true) ? 'refund' : ($state === 'review' ? 'primary' : 'quiet')) . '</td></tr>';
         }
         if (!$data['rows']) { echo '<tr><td colspan="5"><div class="of-empty"><strong>Nema dokumenata u ovom prikazu</strong>Izaberi drugi filter ili otvori WHMCS fakturu.</div></td></tr>'; }
         echo '</tbody></table></div></section>';
