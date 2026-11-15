@@ -56,3 +56,7 @@ Follow [journal, QR, print and authorization acceptance checks](PHASE2-JOURNAL.m
 ## v0.4.0 phase 3
 
 Follow [refund acceptance checks](PHASE3-REFUNDS.md). Use fictitious IDs and a saved isolated sandbox sale. Test half then remaining half, original links, refund QR, unknown-outcome reconciliation and independent local money evidence. MySQL CI includes concurrent refund submissions.
+
+## v0.5.0 phase 5 copies
+
+Follow [copy acceptance checks](PHASE5-COPIES.md). Test a copy of an issued sale and an issued refund. Confirm new Copy documents on the sandbox portal while originals, refund balances and bank-return evidence remain unchanged.

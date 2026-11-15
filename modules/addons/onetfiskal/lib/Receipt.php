@@ -7,7 +7,7 @@ use RuntimeException;
 
 final class Product
 {
-    public const VERSION = '0.4.0';
+    public const VERSION = '0.5.0';
 
     public static function information(): string
     {
@@ -49,8 +49,10 @@ final class Receipt
     {
         $url = Checks::verificationUrl((string) ($response['verificationUrl'] ?? ''));
         $qr = self::qr($response);
+        $isCopy = in_array($response['invoiceCounterExtension'] ?? '', ['КП', 'CS', 'КР', 'CR'], true);
         $html = '<section class="onet-receipt"><p><strong>SANDBOX — SAMO ZA TESTIRANJE</strong></p>'
             . '<p>Test račun: ' . Admin::e($response['invoiceNumber'] ?? '') . '</p>'
+            . ($isCopy ? '<p class="onet-copy-notice">ОВО НИЈЕ ФИСКАЛНИ РАЧУН</p>' : '')
             . '<pre class="onet-journal">' . Admin::e($response['journal'] ?? '') . '</pre>';
         if ($qr !== '') {
             $html .= '<img class="onet-qr" src="' . $qr . '" alt="QR kod za proveru sandbox računa">';
@@ -70,6 +72,7 @@ final class Receipt
         return '.onet-receipt{box-sizing:border-box;background:#fff;color:#111;border:1px solid #ccc;padding:20px;font:13px/1.45 monospace;width:calc(42ch + 42px);max-width:100%}'
             . '.onet-journal{font:inherit;white-space:pre;overflow-x:auto;background:#fff;color:#111;border:0;padding:0}'
             . '.onet-qr{display:block;width:45mm;height:45mm;object-fit:contain;image-rendering:pixelated;margin:12px auto}'
+            . '.onet-copy-notice{font-size:2em;font-weight:bold;line-height:1.2;white-space:normal;overflow-wrap:anywhere}'
             . '.onet-qr-warning{color:#8a3a00}.onet-actions{margin:12px 0}'
             . '@media print{.onet-no-print{display:none!important}.onet-receipt{border:0;padding:0;width:42ch;max-width:100%;font-size:10pt}'
             . '.onet-journal{font-size:10pt;overflow:visible}.onet-qr{break-inside:avoid}a{color:#111}body{margin:12mm}}';
@@ -116,7 +119,7 @@ final class ReceiptExport
         if (!Admin::allowed()) { throw new RuntimeException('Nemaš pristup modulu.', 403); }
         $source = $input['source'] ?? null;
         $id = $input['id'] ?? null;
-        if (!in_array($source, ['invoice', 'synthetic', 'refund'], true) || !is_scalar($id)
+        if (!in_array($source, ['invoice', 'synthetic', 'refund', 'copy'], true) || !is_scalar($id)
             || !preg_match('/^[1-9][0-9]{0,9}$/D', (string) $id) || (int) $id > 2147483647) {
             throw new RuntimeException('Neispravan izvor ili ID računa.', 400);
         }

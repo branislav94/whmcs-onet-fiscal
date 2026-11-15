@@ -127,21 +127,22 @@ final class Store implements Repository
     public const TABLE = 'mod_onetfiskal_invoices';
     public const TESTS = 'mod_onetfiskal_tests';
     public const REFUNDS = 'mod_onetfiskal_refunds';
+    public const COPIES = 'mod_onetfiskal_copies';
     public const GUARD = 'mod_onetfiskal_guard';
 
     private string $table;
 
     public function __construct(private string $credential = '', private string $source = 'invoice')
     {
-        if (!in_array($source, ['invoice', 'synthetic', 'refund'], true)) {
+        if (!in_array($source, ['invoice', 'synthetic', 'refund', 'copy'], true)) {
             throw new RuntimeException('Nepoznat izvor računa.');
         }
-        $this->table = match ($source) { 'synthetic' => self::TESTS, 'refund' => self::REFUNDS, default => self::TABLE };
+        $this->table = match ($source) { 'synthetic' => self::TESTS, 'refund' => self::REFUNDS, 'copy' => self::COPIES, default => self::TABLE };
     }
 
     public static function install(): void
     {
-        foreach ([self::TABLE, self::TESTS, self::REFUNDS] as $table) {
+        foreach ([self::TABLE, self::TESTS, self::REFUNDS, self::COPIES] as $table) {
           if (!Capsule::schema()->hasTable($table)) {
             Capsule::schema()->create($table, static function ($t) use ($table): void {
                 $t->engine = 'InnoDB';
@@ -156,6 +157,12 @@ final class Store implements Repository
                 $t->unsignedInteger('admin_id')->nullable();
                 $t->dateTime('created_at');
                 $t->dateTime('updated_at');
+                if ($table === self::COPIES) {
+                    $t->string('parent_source', 16);
+                    $t->unsignedInteger('parent_id');
+                    $t->index(['parent_source', 'parent_id']);
+                    $t->string('draft_key', 32)->unique();
+                }
                 if ($table === self::REFUNDS) {
                     $t->string('parent_source', 16);
                     $t->unsignedInteger('parent_id');

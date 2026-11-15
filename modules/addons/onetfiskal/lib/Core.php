@@ -167,7 +167,14 @@ final class Checks
         } catch (\Throwable) {
             return false;
         }
-        if (($payload['transactionType'] ?? 0) === 1) {
+        if (($payload['invoiceType'] ?? 0) === 2) {
+            $extensions = ($payload['transactionType'] ?? 0) === 1 ? ['КР', 'CR'] : ['КП', 'CS'];
+            if (!in_array($result['invoiceCounterExtension'] ?? '', $extensions, true)
+                || ($result['invoiceNumber'] ?? '') === ($payload['referentDocumentNumber'] ?? '')
+                || !is_string($result['journal'] ?? null)
+                || !str_contains($result['journal'], (string) $payload['referentDocumentNumber'])
+                || (isset($payload['buyerId']) && !str_contains($result['journal'], $payload['buyerId']))) { return false; }
+        } elseif (($payload['transactionType'] ?? 0) === 1) {
             if (!in_array($result['invoiceCounterExtension'] ?? '', ['ПР', 'NR'], true)
                 || ($result['invoiceNumber'] ?? '') === ($payload['referentDocumentNumber'] ?? '')
                 || !is_string($result['journal'] ?? null)
@@ -279,7 +286,7 @@ final class Service
     private function consume(array $row, array $payload, array $r, bool $post): array
     {
         if ($r['code'] === 200 && is_array($r['data']) && Checks::signed($r['data'], $payload, $this->config)) {
-            $this->repo->finish((int) $row['id'], 'issued', $r['data'], 'Sandbox račun je izdat.', true);
+            $this->repo->finish((int) $row['id'], 'issued', $r['data'], ($payload['invoiceType'] ?? 0) === 2 ? 'Sandbox kopija je izdata.' : 'Sandbox račun je izdat.', true);
         } elseif ($post && in_array($r['code'], [400, 401, 403, 422], true)
             && is_array($r['data']) && isset($r['data']['message']) && empty($r['data']['invoiceNumber'])) {
             $this->repo->finish((int) $row['id'], 'rejected', $r['data'], 'V-PFR je odbio zahtev. HTTP ' . $r['code'], true);

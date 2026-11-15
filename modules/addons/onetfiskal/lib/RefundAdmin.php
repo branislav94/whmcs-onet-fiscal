@@ -102,6 +102,7 @@ final class RefundAdmin
         $extra = self::extra($id);
         if ($row['state'] === 'issued') {
             Admin::receipt(Receipt::decode($row['response']), 'refund', $id);
+            CopyAdmin::parentPanel('refund', $id);
             echo '<h4>Odvojena test evidencija povraćaja novca</h4>';
             if ($row['money_recorded_at']) {
                 echo '<p>Test evidencija sačuvana: ' . Admin::e($row['money_reference']) . ' · ' . Admin::e($row['money_recorded_at']) . ' UTC</p>';

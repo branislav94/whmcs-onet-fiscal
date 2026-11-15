@@ -10,3 +10,5 @@ require_once __DIR__ . '/lib/Journal.php';
 require_once __DIR__ . '/lib/TestAdmin.php';
 require_once __DIR__ . '/lib/Refund.php';
 require_once __DIR__ . '/lib/RefundAdmin.php';
+require_once __DIR__ . '/lib/Copy.php';
+require_once __DIR__ . '/lib/CopyAdmin.php';

@@ -1,8 +1,14 @@
-# ONET Fiskal 0.4.0 — WHMCS sandbox modul
+# ONET Fiskal 0.5.0 — WHMCS sandbox modul
 
 Prva instalaciona razvojna verzija sopstvenog ESIR-a za UTG/ONET. Nema tuđeg fiskalnog servisa: modul šalje zahtev V-PFR sandboxu Poreske uprave Srbije.
 
 **Samo za razvoj i testiranje. Ovo nije odobren ESIR i ne izdaje račune za stvarni promet. Produkcioni endpoint je programski blokiran.**
+
+## Novo u 0.5.0 — sandbox kopije
+
+Dodati su nacrt i potvrda za Kopija–Prodaja i Kopija–Refundacija, povezane sa originalom. Izdavanje kopije je zaseban V-PFR zahtev; preuzimanje originala i dalje ne šalje zahtev. Kopije ne menjaju promet, saldo refundacije ni bankarsku evidenciju. Prikazuju se u žurnalu uz QR i uvećanu poruku „ОВО НИЈЕ ФИСКАЛНИ РАЧУН”.
+
+Prekopiraj ceo addon bez deaktivacije i promene privatne konfiguracije. [Koraci provere i ograničenja](docs/PHASE5-COPIES.md). Ovo je prvi deo faze 5; avansi, poslovna pravila i ostale ESIR funkcije ostaju za dalji razvoj.
 
 ## Novo u 0.4.0 — ručne sandbox refundacije
 
@@ -164,4 +170,4 @@ WHMCS kompatibilnost nije sertifikovana. Testovi ne dokazuju usklađenost ESIR-a
 - Poreska razvojni portal i tehnička dokumentacija: https://tap.sandbox.suf.purs.gov.rs/Help/
 - Poreska: POS to SDC Protocol, Create Invoice, Get Status, Get Last Signed Invoice; postupak odobravanja za sopstvenu upotrebu.
 
-Verzija paketa: 0.4.0, 14. novembar 2026.
+Verzija paketa: 0.5.0, 14. novembar 2026.
