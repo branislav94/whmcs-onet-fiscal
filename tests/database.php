@@ -18,6 +18,7 @@ require __DIR__ . '/../modules/addons/onetfiskal/lib/Copy.php';
 require __DIR__ . '/../modules/addons/onetfiskal/lib/CopyAdmin.php';
 require __DIR__ . '/../modules/addons/onetfiskal/lib/Advance.php';
 require __DIR__ . '/../modules/addons/onetfiskal/lib/AdvanceAdmin.php';
+require __DIR__ . '/../modules/addons/onetfiskal/lib/Delivery.php';
 
 use WHMCS\Database\Capsule;
 use Onet\Fiskal\Builder;
@@ -60,7 +61,7 @@ function rejected(callable $f): void {
     throw new RuntimeException('Expected operation to be blocked');
 }
 function resetDatabase(): void {
-    foreach ([Store::GUARD, Store::TABLE, Store::TESTS, Store::REFUNDS, Store::COPIES, Store::ADVANCES, Store::ADVANCE_GROUPS, 'tbladmins', 'tbladdonmodules', 'tblinvoices', 'tblaccounts', 'tblconfiguration'] as $name) {
+    foreach ([Store::GUARD, Store::TABLE, Store::TESTS, Store::REFUNDS, Store::COPIES, Store::ADVANCES, Store::ADVANCE_GROUPS, 'tbladmins', 'tbladdonmodules', 'tblclients', 'tblinvoices', 'tblaccounts', 'tblconfiguration'] as $name) {
         Capsule::schema()->dropIfExists($name);
     }
     Store::install();
@@ -317,6 +318,7 @@ require __DIR__ . '/refund-cases.php';
 require __DIR__ . '/copy-cases.php';
 require __DIR__ . '/advance-cases.php';
 require __DIR__ . '/ui-cases.php';
+require __DIR__ . '/delivery-cases.php';
 
 try {
     foreach ($tests as $name => $test) { $test(); echo 'PASS [' . $driver . '] ' . $name . PHP_EOL; }

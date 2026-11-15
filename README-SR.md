@@ -1,8 +1,14 @@
-# ONET Fiskal 0.8.0 — WHMCS sandbox modul
+# ONET Fiskal 0.9.0 — WHMCS sandbox modul
 
 Prva instalaciona razvojna verzija sopstvenog ESIR-a za UTG/ONET. Nema tuđeg fiskalnog servisa: modul šalje zahtev V-PFR sandboxu Poreske uprave Srbije.
 
 **Samo za razvoj i testiranje. Ovo nije odobren ESIR i ne izdaje račune za stvarni promet. Produkcioni endpoint je programski blokiran.**
+
+## Novo u 0.9.0 — administratorski pregled dostave
+
+Uz već izdati dokument dostupan je pregled primaoca, sandbox poruke i priloga. Primalac WHMCS prodaje/refundacije/kopije čita se preko originalne fakture i klijenta. Zasebni testovi koriste demonstracionu adresu. Interno zatvaranje avansa i njegova kopija ne ulaze u dostavu kupcu.
+
+Ovo još ne šalje mejlove niti upisuje zadatak za slanje. Prilozi su postojeći HTML sa sačuvanim QR-om i originalni TXT; PDF se i dalje čuva kroz browser štampu. Nema nove šeme baze ni promene privatnog config-a. Prekopiraj ceo addon, uključujući novi `lib/Delivery.php`. [Koraci provere i dalji delovi faze 6](docs/PHASE6-DELIVERY.md).
 
 ## Novo u 0.8.0 — radni pregled i vidljiv sledeći korak
 

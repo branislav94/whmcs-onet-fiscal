@@ -76,3 +76,7 @@ Two additional database cases verify an exact single-query batch lookup of assig
 ## v0.8.0 task overview
 
 Database coverage checks multi-source counts and unknown-outcome prioritization without writes or lock changes, explicit empty filters, internal-settlement/final-draft continuation, and selecting the frozen request amount rather than an unconfirmed response amount. Counts query only state columns; detailed payloads are fetched for the displayed page.
+
+## v0.9.0 delivery preview
+
+Five database cases cover administrator ACL/state validation, exact original-customer resolution despite caller-supplied overrides, matching protected-export attachment bytes and unchanged evidence/locks, refund/copy parent traversal, internal AR/copy exclusion, synthetic/final test recipients, metadata escaping, email injection rejection and missing QR warnings. No mail, queue or fiscal transport is called by preview generation.

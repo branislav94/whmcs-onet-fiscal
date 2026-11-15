@@ -20,7 +20,10 @@ Implement agreed advances and closing flows, copies, applicable tax, quantities,
 ## UI/UX improvement — v0.8.0 candidate
 Task-first multi-source overview, explicit continuation actions and unfinished-settlement reminders, prominent review totals, exact assigned WHMCS number tags beside internal IDs, calmer BoardUI-inspired presentation, readable numeric summaries, explicit workflow steps, separated customer returns and internal settlement, and protected export links for all document sources. Existing fiscal handlers and storage schema are preserved. See [UI acceptance checklist](docs/UI-GUIDE.md); verify the installed WHMCS theme before accepting the layout.
 
-## Phase 6 — Automation and customer delivery
+## Phase 6 — Delivery preview candidate v0.9.0
+Administrator-only preview resolves the exact WHMCS customer for issued sales/refunds/copies, renders sandbox message content, and checks saved HTML/TXT attachments. Internal AR closing and its copy are excluded. No send/queue/public client route or server PDF is enabled. [Acceptance and remaining steps](docs/PHASE6-DELIVERY.md).
+
+## Phase 6 — Remaining automation and customer delivery
 Durable processing queue, business-event rules, client access and email delivery with independent delivery retries. Do not reissue when email fails.
 
 ## Phase 7 — Approval
