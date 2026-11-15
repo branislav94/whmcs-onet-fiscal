@@ -12,3 +12,5 @@ require_once __DIR__ . '/lib/Refund.php';
 require_once __DIR__ . '/lib/RefundAdmin.php';
 require_once __DIR__ . '/lib/Copy.php';
 require_once __DIR__ . '/lib/CopyAdmin.php';
+require_once __DIR__ . '/lib/Advance.php';
+require_once __DIR__ . '/lib/AdvanceAdmin.php';

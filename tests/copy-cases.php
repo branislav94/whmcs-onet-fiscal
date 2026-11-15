@@ -20,7 +20,7 @@ final class CopyApi implements Transport {
         } else { $this->gets++; equal('/api/v3/invoices/' . $this->requestId, $path); }
         $p = $this->payload; $extension = $p['transactionType'] === 1 ? 'КР' : 'КП';
         return ['code' => 200, 'data' => ['requestedBy' => 'ABCD1234', 'invoiceNumber' => 'ABCD1234-Dt1Ov2o0-' . (200 + $this->posts),
-            'totalAmount' => $p['payment'][0]['amount'], 'invoiceCounterExtension' => $this->wrong ? 'ПП' : $extension,
+            'totalAmount' => \Onet\Fiskal\Money::number(array_sum(array_map(static fn($i) => \Onet\Fiskal\Money::cents($i['totalAmount']), $p['items']))), 'invoiceCounterExtension' => $this->wrong ? 'ПП' : $extension,
             'journal' => 'ОВО НИЈЕ ФИСКАЛНИ РАЧУН TEST COPY ' . $p['referentDocumentNumber'] . ' ' . ($p['buyerId'] ?? ''),
             'sdcDateTime' => '2026-11-14T13:00:00+01:00', 'signature' => 'mock-signature',
             'verificationUrl' => 'https://sandbox.suf.purs.gov.rs/v/?vl=copy-test', 'verificationQRCode' => tinyGif()]];

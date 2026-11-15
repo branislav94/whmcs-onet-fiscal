@@ -7,7 +7,7 @@ use RuntimeException;
 
 final class Product
 {
-    public const VERSION = '0.5.0';
+    public const VERSION = '0.6.0';
 
     public static function information(): string
     {
@@ -45,7 +45,7 @@ final class Receipt
         return 'data:image/gif;base64,' . base64_encode($bytes);
     }
 
-    public static function fragment(array $response): string
+    public static function fragment(array $response, array $notes = []): string
     {
         $url = Checks::verificationUrl((string) ($response['verificationUrl'] ?? ''));
         $qr = self::qr($response);
@@ -59,6 +59,11 @@ final class Receipt
         } else {
             $html .= '<p class="onet-qr-warning">QR kod nedostaje ili nije ispravan u sačuvanom odgovoru. '
                 . 'Prikaz nije kompletan za dostavu kupcu. Otvaranje ovog računa ne šalje novi fiskalni zahtev.</p>';
+        }
+        if ($notes) {
+            $html .= '<aside class="onet-advance-notes"><strong>Podaci o avansnom postupku</strong>';
+            foreach ($notes as $note) { $html .= '<p>' . Admin::e($note) . '</p>'; }
+            $html .= '</aside>';
         }
         if ($url !== '') {
             $html .= '<p><a target="_blank" rel="noopener noreferrer" href="' . Admin::e($url)
@@ -78,7 +83,7 @@ final class Receipt
             . '.onet-journal{font-size:10pt;overflow:visible}.onet-qr{break-inside:avoid}a{color:#111}body{margin:12mm}}';
     }
 
-    public static function document(array $response): string
+    public static function document(array $response, array $notes = []): string
     {
         return '<!doctype html><html lang="sr-Latn"><head><meta charset="utf-8">'
             . '<meta name="viewport" content="width=device-width,initial-scale=1">'
@@ -86,7 +91,7 @@ final class Receipt
             . '<title>Sandbox račun ' . Admin::e($response['invoiceNumber'] ?? '') . '</title>'
             . '<style>body{font:15px/1.5 sans-serif;margin:24px}' . self::styles() . '</style></head><body>'
             . '<p class="onet-no-print">Štampa / PDF: koristi Ctrl+P (na macOS-u Cmd+P), zatim štampač ili „Sačuvaj kao PDF”. '
-            . 'Ovo je prikaz već izdatog test računa.</p>' . self::fragment($response) . '</body></html>';
+            . 'Ovo je prikaz već izdatog test računa.</p>' . self::fragment($response, $notes) . '</body></html>';
     }
 
     public static function links(string $source, int $id): string
@@ -119,7 +124,7 @@ final class ReceiptExport
         if (!Admin::allowed()) { throw new RuntimeException('Nemaš pristup modulu.', 403); }
         $source = $input['source'] ?? null;
         $id = $input['id'] ?? null;
-        if (!in_array($source, ['invoice', 'synthetic', 'refund', 'copy'], true) || !is_scalar($id)
+        if (!in_array($source, ['invoice', 'synthetic', 'refund', 'copy', 'advance'], true) || !is_scalar($id)
             || !preg_match('/^[1-9][0-9]{0,9}$/D', (string) $id) || (int) $id > 2147483647) {
             throw new RuntimeException('Neispravan izvor ili ID računa.', 400);
         }
@@ -130,6 +135,6 @@ final class ReceiptExport
         $response = Receipt::decode($row['response']);
         return ['format' => $format, 'download' => ($input['download'] ?? '') === '1' || $format === 'txt',
             'filename' => 'ONET-sandbox-' . $source . '-' . (int) $id . '.' . $format,
-            'body' => $format === 'html' ? Receipt::document($response) : $response['journal']];
+            'body' => $format === 'html' ? Receipt::document($response, Advance::notes($source, $row)) : $response['journal']];
     }
 }

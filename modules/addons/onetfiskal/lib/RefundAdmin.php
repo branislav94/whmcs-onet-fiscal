@@ -95,7 +95,7 @@ final class RefundAdmin
         $row = (new Store('', 'refund'))->find($id);
         if (!$row) { throw new RuntimeException('Refundacija ne postoji.'); }
         $parent = Refund::parent($row['parent_source'], (int) $row['parent_id']);
-        $originalUrl = $row['parent_source'] === 'invoice' ? 'invoiceid=' : 'view=tests&amp;testid=';
+        $originalUrl = match ($row['parent_source']) { 'invoice' => 'invoiceid=', 'advance' => 'view=advances&amp;advanceid=', default => 'view=tests&amp;testid=' };
         echo '<h4>Refundacija #' . $id . '</h4><p>Stanje: ' . Admin::e($row['state']) . ' · RequestId: ' . Admin::e($row['request_id'])
             . '</p><p>Original: <a href="addonmodules.php?module=onetfiskal&amp;' . $originalUrl . (int) $row['parent_id'] . '">'
             . Admin::e($parent['response']['invoiceNumber']) . '</a></p><p>Razlog: ' . Admin::e($row['reason']) . '</p>';

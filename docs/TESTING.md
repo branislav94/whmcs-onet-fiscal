@@ -60,3 +60,7 @@ Follow [refund acceptance checks](PHASE3-REFUNDS.md). Use fictitious IDs and a s
 ## v0.5.0 phase 5 copies
 
 Follow [copy acceptance checks](PHASE5-COPIES.md). Test a copy of an issued sale and an issued refund. Confirm new Copy documents on the sandbox portal while originals, refund balances and bank-return evidence remain unchanged.
+
+## v0.6.0 phase 5 advances
+
+Follow [advance, customer return and internal settlement acceptance](PHASE5-ADVANCES.md). Keep customer money returns distinct from internal AR. Verify AP → AR → PP, zero/new topup, restart between AR and PP and protected annotated output. MySQL CI includes a competing return-versus-settlement test.

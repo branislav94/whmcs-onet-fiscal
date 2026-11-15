@@ -174,6 +174,18 @@ final class Checks
                 || !is_string($result['journal'] ?? null)
                 || !str_contains($result['journal'], (string) $payload['referentDocumentNumber'])
                 || (isset($payload['buyerId']) && !str_contains($result['journal'], $payload['buyerId']))) { return false; }
+        } elseif (($payload['invoiceType'] ?? 0) === 4) {
+            $extensions = ($payload['transactionType'] ?? 0) === 1 ? ['АР', 'AR'] : ['АП', 'AS'];
+            if (!in_array($result['invoiceCounterExtension'] ?? '', $extensions, true)
+                || !is_string($result['journal'] ?? null)
+                || (isset($payload['referentDocumentNumber']) && (!str_contains($result['journal'], $payload['referentDocumentNumber'])
+                    || ($result['invoiceNumber'] ?? '') === $payload['referentDocumentNumber']))
+                || (isset($payload['buyerId']) && !str_contains($result['journal'], $payload['buyerId']))) { return false; }
+        } elseif (($payload['transactionType'] ?? 0) === 0 && isset($payload['referentDocumentNumber'])) {
+            if (!in_array($result['invoiceCounterExtension'] ?? '', ['ПП', 'NS'], true)
+                || !is_string($result['journal'] ?? null)
+                || !str_contains($result['journal'], $payload['referentDocumentNumber'])
+                || ($result['invoiceNumber'] ?? '') === $payload['referentDocumentNumber']) { return false; }
         } elseif (($payload['transactionType'] ?? 0) === 1) {
             if (!in_array($result['invoiceCounterExtension'] ?? '', ['ПР', 'NR'], true)
                 || ($result['invoiceNumber'] ?? '') === ($payload['referentDocumentNumber'] ?? '')
