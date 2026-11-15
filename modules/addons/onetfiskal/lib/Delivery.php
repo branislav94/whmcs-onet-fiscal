@@ -79,17 +79,27 @@ final class Delivery
         }
         $lines[] = 'ONET / United Tech Group DOO';
         $text = implode("\n\n", $lines); $html = '<div class="of-mail-message">';
-        foreach ($lines as $line) { $html .= '<p>' . Admin::e($line) . '</p>'; }
+        foreach ($lines as $line) {
+            if ($verify !== '' && $line === 'Provera test dokumenta: ' . $verify) {
+                $html .= '<p><a class="of-mail-verify" href="' . Admin::e($verify) . '" target="_blank" rel="noopener noreferrer" style="display:inline-block;background:#204f9d;color:#ffffff;padding:11px 18px;border-radius:6px;text-decoration:none;font-weight:600">Proveri račun</a></p>';
+            } else { $html .= '<p>' . Admin::e($line) . '</p>'; }
+        }
         $html .= '</div>';
         $attachments = [
             ['name' => 'ONET-sandbox-' . $source . '-' . (int) $id . '.html', 'type' => 'text/html; charset=UTF-8', 'body' => Receipt::document($response, $notes)],
             ['name' => 'ONET-sandbox-' . $source . '-' . (int) $id . '.txt', 'type' => 'text/plain; charset=UTF-8', 'body' => $response['journal']],
         ];
+        $pdfValid = false;
+        try {
+            $pdf = Pdf::render($response, $notes);
+            $attachments[] = ['name' => 'ONET-sandbox-' . $source . '-' . (int) $id . '.pdf', 'type' => 'application/pdf', 'body' => $pdf];
+            $pdfValid = true;
+        } catch (RuntimeException $e) { $warnings[] = 'PDF prilog nije pripremljen: ' . $e->getMessage(); }
         foreach ($attachments as &$attachment) { $attachment['sha256'] = hash('sha256', $attachment['body']); $attachment['bytes'] = strlen($attachment['body']); } unset($attachment);
         return ['source' => $source, 'id' => (int) $id, 'invoice_id' => $context['invoice_id'], 'invoice_number' => $number,
             'client_id' => $clientId, 'recipient' => $recipient, 'recipient_valid' => $recipientValid,
             'demo_recipient' => $context['invoice_id'] === null, 'send_enabled' => false, 'subject' => $subject,
-            'html' => $html, 'text' => $text, 'response' => $response, 'qr_valid' => $qrValid, 'warnings' => $warnings, 'attachments' => $attachments];
+            'html' => $html, 'text' => $text, 'response' => $response, 'qr_valid' => $qrValid, 'pdf_valid' => $pdfValid, 'warnings' => $warnings, 'attachments' => $attachments];
     }
     public static function render(array $input): void
     {
@@ -109,7 +119,7 @@ final class Delivery
             $rows = ''; $checksums = [];
             foreach ($p['attachments'] as $a) { $rows .= '<tr><td>' . Admin::e($a['name']) . '<small>' . Admin::e($a['type']) . '</small></td><td class="of-num">' . $a['bytes'] . ' B</td></tr>'; $checksums[$a['name']] = $a['sha256']; }
             echo Ui::card('Prilozi iz sačuvanog fiskalnog odgovora', '<div class="of-table-wrap"><table class="of-table"><thead><tr><th>Datoteka</th><th class="of-num">Veličina</th></tr></thead><tbody>' . $rows . '</tbody></table></div>'
-                . Receipt::links($p['source'], $p['id']) . Ui::technical('Kontrolni podaci priloga (SHA-256)', $checksums), 'HTML sadrži sačuvani QR; TXT čuva originalni žurnal. PDF se za sada čuva preko prikaza za štampu — nije serverski generisan prilog.');
+                . Receipt::links($p['source'], $p['id']) . Ui::technical('Kontrolni podaci priloga (SHA-256)', $checksums), 'PDF je serverski generisan iz istog sačuvanog žurnala i QR-a kada je dostupan. HTML i originalni TXT ostaju zasebni prilozi.');
             echo '<div class="of-actions">' . Ui::button($p['source'] === 'copy' ? CopyAdmin::url($p['id']) : CopyAdmin::originalUrl($p['source'], $p['id']), '← Vrati se na dokument') . '</div>';
         } catch (RuntimeException $e) { echo Ui::note('Pregled dostave nije dostupan', $e->getMessage(), 'danger'); }
     }

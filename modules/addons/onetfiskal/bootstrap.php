@@ -16,3 +16,4 @@ require_once __DIR__ . '/lib/CopyAdmin.php';
 require_once __DIR__ . '/lib/Advance.php';
 require_once __DIR__ . '/lib/AdvanceAdmin.php';
 require_once __DIR__ . '/lib/Delivery.php';
+require_once __DIR__ . '/lib/Pdf.php';

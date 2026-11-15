@@ -19,6 +19,7 @@ require __DIR__ . '/../modules/addons/onetfiskal/lib/CopyAdmin.php';
 require __DIR__ . '/../modules/addons/onetfiskal/lib/Advance.php';
 require __DIR__ . '/../modules/addons/onetfiskal/lib/AdvanceAdmin.php';
 require __DIR__ . '/../modules/addons/onetfiskal/lib/Delivery.php';
+require __DIR__ . '/../modules/addons/onetfiskal/lib/Pdf.php';
 
 use WHMCS\Database\Capsule;
 use Onet\Fiskal\Builder;

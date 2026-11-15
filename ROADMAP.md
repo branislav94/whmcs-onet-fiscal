@@ -23,6 +23,9 @@ Task-first multi-source overview, explicit continuation actions and unfinished-s
 ## Phase 6 — Delivery preview candidate v0.9.0
 Administrator-only preview resolves the exact WHMCS customer for issued sales/refunds/copies, renders sandbox message content, and checks saved HTML/TXT attachments. Internal AR closing and its copy are excluded. No send/queue/public client route or server PDF is enabled. [Acceptance and remaining steps](docs/PHASE6-DELIVERY.md).
 
+## Phase 6 — Server PDF candidate v0.10.0
+Protected server PDF downloads and preview attachments, bundled Cyrillic monospace font, exact saved QR pixels, multi-page journals and advance notes. HTML mail uses a verification button; plain text retains the URL. Runtime uses the WHMCS PDF engine, while tests pin TCPDF. No email sending is enabled. [Acceptance checks](docs/PHASE6-PDF.md).
+
 ## Phase 6 — Remaining automation and customer delivery
 Durable processing queue, business-event rules, client access and email delivery with independent delivery retries. Do not reissue when email fails.
 

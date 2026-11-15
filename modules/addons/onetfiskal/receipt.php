@@ -16,11 +16,11 @@ try {
         throw new RuntimeException('Dozvoljen je samo GET.', 405);
     }
     $export = \Onet\Fiskal\ReceiptExport::load($_GET);
-    header('Content-Type: ' . ($export['format'] === 'html' ? 'text/html' : 'text/plain') . '; charset=UTF-8');
+    header('Content-Type: ' . match ($export['format']) { 'pdf' => 'application/pdf', 'html' => 'text/html; charset=UTF-8', default => 'text/plain; charset=UTF-8' });
     header('Content-Disposition: ' . ($export['download'] ? 'attachment' : 'inline') . '; filename="' . $export['filename'] . '"');
     echo $export['body'];
 } catch (Throwable $e) {
-    $code = in_array($e->getCode(), [400, 403, 404, 405], true) ? $e->getCode() : 500;
+    $code = in_array($e->getCode(), [400, 403, 404, 405, 422, 503], true) ? $e->getCode() : 500;
     http_response_code($code);
     header('Content-Type: text/plain; charset=UTF-8');
     echo $code === 500 ? 'Račun nije moguće otvoriti. Proveri evidenciju modula.' : $e->getMessage();
