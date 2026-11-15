@@ -112,6 +112,11 @@ final class RefundAdmin
         echo Ui::documentSteps($row['state']);
         echo '<p>Original: <a class="of-reference" href="' . Admin::e(CopyAdmin::originalUrl($row['parent_source'], (int) $row['parent_id'])) . '">'
             . Admin::e($parent['response']['invoiceNumber']) . '</a></p><p><strong>Razlog:</strong> ' . Admin::e($row['reason']) . '</p>';
+        if ($row['parent_source'] === 'invoice') {
+            $whmcsId = (int) $row['parent_id']; $numbers = Ui::invoiceNumbers([$whmcsId]);
+            echo '<p class="of-muted">WHMCS faktura: <a href="' . Admin::e(CopyAdmin::originalUrl('invoice', $whmcsId)) . '">'
+                . Ui::invoiceIdentity($whmcsId, $numbers[$whmcsId] ?? null) . '</a></p>';
+        }
         $extra = self::extra($id);
         if ($row['state'] === 'review' && $config) {
             echo Ui::note('Proveri iznos pre potvrde', 'Izdaješ test dokument povraćaja. Ne vraća novac preko banke; isplata je odvojena.', 'refund');

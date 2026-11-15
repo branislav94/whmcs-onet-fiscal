@@ -68,3 +68,7 @@ Follow [advance, customer return and internal settlement acceptance](PHASE5-ADVA
 ## v0.7.0 UI workflow checks
 
 `tests/ui-cases.php` runs within the database suite. It checks Serbian currency formatting and output escaping, continuation of an existing advance draft, separate customer-return/settlement actions, the final-document continuation after internal closing, reconciliation-only unknown refunds, and independent money evidence/export links for issued refunds. Existing issue/locking/refund/advance tests remain unchanged except display assertions for formatted totals. No live fiscal or bank calls. Visual acceptance in the installed WHMCS theme: [UI guide](UI-GUIDE.md).
+
+## v0.7.1 invoice identities
+
+Two additional database cases verify an exact single-query batch lookup of assigned WHMCS numbers, blank/deleted IDs, escaping of untrusted number strings, and the invoice list/detail/journal/refund integration. The original saved fiscal response and shared lock remain unchanged.

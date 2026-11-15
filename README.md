@@ -1,4 +1,7 @@
-# ONET Fiskal — v0.7.0 sandbox
+# ONET Fiskal — v0.7.1 sandbox
+
+WHMCS invoice identities now pair the internal ID with the exact assigned `invoicenum`, without constructing a prefix or sequence. Batched read-only lookups cover recent invoices, details, journal and linked refunds; missing numbers leave the ID visible. Visual refinements follow BoardUI's typography, neutral surfaces, table composition and semantic states, implemented in scoped PHP/CSS without a new frontend dependency.
+
 
 Scoped WHMCS addon redesign: readable Serbian currency summaries, numbered workflow steps, clear preview/issue/reconcile actions, and separate customer-return versus internal-advance-settlement paths. Existing financial handlers, locking, authorization and saved receipt journals are preserved. Upgrade the entire addon including `assets/admin.css` and `lib/Ui.php`; no new database schema or private-config changes. [UI guide and upgrade checklist](docs/UI-GUIDE.md).
 

@@ -17,8 +17,8 @@ Confirm supply timing for annual hosting, renewal and domains; advance/final doc
 Copy/Sale -8 and Copy/Refund -9 verified by the user including official portal checks; PR #6 merged. Manual one-payment advance/return/internal-settlement/final flows implemented; [advance acceptance checks](docs/PHASE5-ADVANCES.md) await authenticated sandbox validation. This is one part of phase 5, not completion of the full checklist.
 Implement agreed advances and closing flows, copies, applicable tax, quantities, item catalogue/GTIN and remaining mandatory ESIR functions. Validate the whole applicable checklist rather than assuming current tests establish compliance.
 
-## UI/UX improvement — v0.7.0 candidate
-Readable numeric summaries, explicit workflow steps, separated customer returns and internal settlement, and protected export links for all document sources. Existing fiscal handlers and storage schema are preserved. See [UI acceptance checklist](docs/UI-GUIDE.md); verify the installed WHMCS theme before accepting the layout.
+## UI/UX improvement — v0.7.1 candidate
+Exact assigned WHMCS number tags beside internal IDs, calmer BoardUI-inspired presentation, readable numeric summaries, explicit workflow steps, separated customer returns and internal settlement, and protected export links for all document sources. Existing fiscal handlers and storage schema are preserved. See [UI acceptance checklist](docs/UI-GUIDE.md); verify the installed WHMCS theme before accepting the layout.
 
 ## Phase 6 — Automation and customer delivery
 Durable processing queue, business-event rules, client access and email delivery with independent delivery retries. Do not reissue when email fails.

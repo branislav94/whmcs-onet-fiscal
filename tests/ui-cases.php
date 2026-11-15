@@ -53,3 +53,38 @@ $tests['UI issued refund presents separate optional money evidence and protected
     equal(false, str_contains($html, 'value="refund_issue"'));
     equal(null, $store->find((int) $row['invoice_id'])['money_recorded_at']); equal(1, $api->posts);
 };
+
+$tests['WHMCS invoice tags batch-read exact assigned numbers without inventing missing numbers'] = function (): void {
+    resetDatabase();
+    \WHMCS\Database\Capsule::schema()->create('tblinvoices', function ($t): void { $t->integer('id'); $t->string('invoicenum')->nullable(); });
+    \WHMCS\Database\Capsule::table('tblinvoices')->insert([
+        ['id' => 48, 'invoicenum' => 'UTG-2026-048'], ['id' => 40, 'invoicenum' => ''],
+        ['id' => 36, 'invoicenum' => '<img src=x onerror=alert(1)>'], ['id' => 44, 'invoicenum' => null],
+    ]);
+    $db = \WHMCS\Database\Capsule::connection(); $db->enableQueryLog(); $db->flushQueryLog();
+    $numbers = Ui::invoiceNumbers([48, 40, 36, 44, 999, 48]);
+    equal(1, count($db->getQueryLog())); $db->disableQueryLog();
+    equal('UTG-2026-048', $numbers[48]); equal(false, isset($numbers[40])); equal(false, isset($numbers[44])); equal(false, isset($numbers[999]));
+    equal('', Ui::invoiceTag(null)); equal('', Ui::invoiceTag('  '));
+    $html = Ui::invoiceIdentity(36, $numbers[36]);
+    equal(false, str_contains($html, '<img')); equal(true, str_contains($html, '&lt;img'));
+    equal(4, \WHMCS\Database\Capsule::table('tblinvoices')->count());
+};
+$tests['invoice list detail journal and refund show linked WHMCS number without changing fiscal evidence'] = function () use ($config, $snapshot): void {
+    $original = refundParent($config, $snapshot); accessFixtures();
+    \WHMCS\Database\Capsule::schema()->create('tblinvoices', function ($t): void { $t->integer('id'); $t->string('invoicenum')->nullable(); });
+    \WHMCS\Database\Capsule::table('tblinvoices')->insert(['id' => 48, 'invoicenum' => 'UTG-2026-048']);
+    $_SESSION = ['adminid' => 1]; $_POST = []; $_GET = []; $_SERVER['REQUEST_METHOD'] = 'GET';
+    ob_start(); try { \Onet\Fiskal\Admin::render([]); $list = ob_get_contents(); } finally { ob_end_clean(); }
+    equal(true, str_contains($list, 'of-invoice-identity')); equal(true, str_contains($list, 'UTG-2026-048'));
+    $_GET = ['invoiceid' => 48];
+    ob_start(); try { \Onet\Fiskal\Admin::render([]); $detail = ob_get_contents(); } finally { ob_end_clean(); }
+    equal(true, str_contains($detail, 'UTG-2026-048')); equal(true, str_contains($detail, 'of-heading-tags'));
+    ob_start(); try { \Onet\Fiskal\Journal::render(['source' => 'invoice']); $journal = ob_get_contents(); } finally { ob_end_clean(); }
+    equal(true, str_contains($journal, 'UTG-2026-048'));
+    $refund = (new \Onet\Fiskal\RefundStore($config))->draft('invoice', 48, refundInput('0.500'), 1);
+    ob_start(); try { \Onet\Fiskal\RefundAdmin::render($config, (int) $refund['invoice_id'], '', 0); $html = ob_get_contents(); } finally { ob_end_clean(); }
+    equal(true, str_contains($html, 'UTG-2026-048')); equal(true, str_contains($html, 'name="refund_hash"'));
+    equal($original['response'], (new \Onet\Fiskal\Store())->find(48)['response']);
+    equal(null, \WHMCS\Database\Capsule::table(\Onet\Fiskal\Store::GUARD)->value('attempt_id')); $_GET = [];
+};

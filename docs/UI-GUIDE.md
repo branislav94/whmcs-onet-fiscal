@@ -1,4 +1,4 @@
-# ONET Fiskal 0.7.0 — pregledniji administratorski interfejs
+# ONET Fiskal 0.7.1 — pregledniji administratorski interfejs
 
 Ovo je nadogradnja prikaza postojećeg sandbox modula. Ne dodaje nove fiskalne tipove, bankarski API, mejlove ili produkciju. WHMCS zaglavlje i bočna navigacija ostaju izvan stilova dodatka.
 
@@ -9,6 +9,12 @@ Ovo je nadogradnja prikaza postojećeg sandbox modula. Ne dodaje nove fiskalne t
 3. Nemoj deaktivirati dodatak, brisati evidenciju ili menjati privatni config/PFX. Ova verzija ne dodaje novu šemu baze.
 4. Ponovo otvori ONET Fiskal i osveži stranicu. CSS je lokalno ugrađen u odgovor; nema CDN-a, fontova ili skripti treće strane.
 5. Otvori ranije izdatu prodaju, refundaciju i avans. Proveri žurnal, QR, HTML/TXT i štampu. Sam pregled ne izdaje dokument.
+
+## Broj WHMCS računa uz interni ID
+
+Primer `#48` uz oznaku `UTG-2026-048` znači: interni WHMCS ID je 48, a dodeljeni broj računa pročitan je iz `tblinvoices.invoicenum`. Dodatak ne generiše niti prepravlja broj. Prazan broj ili nedostajući WHMCS zapis ne stvaraju lažnu oznaku. Ovo je prikaz trenutne WHMCS veze; originalni PFR broj i sačuvani fiskalni odgovor ostaju neizmenjeni.
+
+Oznake se prikazuju u poslednjim fakturama, detalju računa, žurnalu za izvor WHMCS i uz original fakture na refundaciji. Sintetički testovi i zasebni test avansi ne dobijaju izmišljeni WHMCS broj. Pretraga i dalje koristi polja naznačena na formi.
 
 ## Kako čitati ekran
 
@@ -49,3 +55,9 @@ Za ponovno otvaranje/štampanje koristi sačuvani original. Opciona sekcija „K
 - Proveri da druge WHMCS stranice i originalni izvoz računa nisu dobili stilove dodatka.
 
 Lokalne provere koriste izmišljene podatke i simulirani V-PFR. Prikaz treba potvrditi i u aktivnoj WHMCS temi; provera pregleda nije potvrda poreske usklađenosti ili produkcionog odobrenja.
+
+## Vizuelni pravac
+
+v0.7.1 koristi neutralniju paletu, jednostavnije podvučene tabove, kompaktnu tabelu bez ugnježdenih okvira i jasnu hijerarhiju tipografije. Boja ističe status i važne radnje, uz obavezne tekstualne nazive.
+
+Reference: [BoardUI Typography](https://www.boardui.com/components/typography), [Color](https://www.boardui.com/components/color), [Table](https://www.boardui.com/components/table), [Button](https://www.boardui.com/components/button). Prilagođene su smernice prikaza, bez preuzimanja React komponenti ili Pro šablona.

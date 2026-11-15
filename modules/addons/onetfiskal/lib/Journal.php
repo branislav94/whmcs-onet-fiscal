@@ -128,13 +128,14 @@ final class Journal
         echo '<p>Ukupno: ' . $result['total'] . ' · Stranica ' . $f['page'] . '/' . $result['pages'] . '</p>'
             . '<div class="of-table-wrap"><table class="of-table"><thead><tr><th>Izvor / ID</th><th>Stanje</th>'
             . '<th>PFR broj / RequestId</th><th class="of-num">Iznos RSD</th><th>PFR vreme (iz odgovora)</th><th>Evidencija (UTC)</th><th>Račun</th></tr></thead><tbody>';
+        $numbers = Ui::invoiceNumbers(array_column(array_filter($result['rows'], static fn($row) => $row['source'] === 'invoice'), 'invoice_id'));
         foreach ($result['rows'] as $row) {
             $id = (int) $row['invoice_id'];
             $source = $row['source'];
             $detail = Admin::e($source === 'copy' ? CopyAdmin::url($id) : CopyAdmin::originalUrl($source, $id));
             $response = json_decode((string) $row['response'], true);
             $response = is_array($response) ? $response : [];
-            echo '<tr><td><a href="' . $detail . '">' . ($source === 'invoice' ? 'WHMCS #' : ($source === 'refund' ? 'Refundacija #' : ($source === 'copy' ? 'Kopija #' : ($source === 'advance' ? 'Avansni dokument #' : 'Test #')))) . $id . '</a>' . ($source === 'advance' ? '<br><small>' . Admin::e(AdvanceAdmin::LABELS[$row['document_kind']] ?? '') . '</small>' : '') . '</td><td>'
+            echo '<tr><td><a href="' . $detail . '">' . ($source === 'invoice' ? 'WHMCS #' : ($source === 'refund' ? 'Refundacija #' : ($source === 'copy' ? 'Kopija #' : ($source === 'advance' ? 'Avansni dokument #' : 'Test #')))) . $id . '</a>' . ($source === 'invoice' ? ' ' . Ui::invoiceTag($numbers[$id] ?? null) : '') . ($source === 'advance' ? '<br><small>' . Admin::e(AdvanceAdmin::LABELS[$row['document_kind']] ?? '') . '</small>' : '') . '</td><td>'
                 . Ui::badge($row['state']) . '</td><td>' . Admin::e(is_scalar($response['invoiceNumber'] ?? null) ? $response['invoiceNumber'] : '')
                 . '<br><small class="of-reference">' . Admin::e($row['request_id']) . '</small></td><td class="of-num">'
                 . (is_scalar($response['totalAmount'] ?? null) ? Ui::value($response['totalAmount']) : '—') . '</td><td>'

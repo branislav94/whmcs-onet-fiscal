@@ -2,6 +2,8 @@
 declare(strict_types=1);
 namespace Onet\Fiskal;
 
+use WHMCS\Database\Capsule;
+
 /** Presentation only: never writes financial evidence or calls a fiscal/banking service. */
 final class Ui
 {
@@ -10,6 +12,33 @@ final class Ui
     public static function value(mixed $value): string
     {
         try { return self::money(Money::cents($value)); } catch (\Throwable) { return '—'; }
+    }
+    /** Display-only lookup, one query per list. Never derives or assigns invoice numbers. */
+    public static function invoiceNumbers(array $ids): array
+    {
+        $ids = array_values(array_unique(array_filter(array_map('intval', $ids), static fn($id) => $id > 0)));
+        if (!$ids) { return []; }
+        try {
+            $rows = Capsule::table('tblinvoices')->whereIn('id', $ids)->get(['id', 'invoicenum']);
+        } catch (\Throwable) {
+            // Historical fiscal documents remain readable when WHMCS metadata is unavailable.
+            return [];
+        }
+        $numbers = [];
+        foreach ($rows as $row) {
+            $number = trim((string) ($row->invoicenum ?? ''));
+            if ($number !== '') { $numbers[(int) $row->id] = $number; }
+        }
+        return $numbers;
+    }
+    public static function invoiceTag(?string $number): string
+    {
+        $number = trim($number ?? '');
+        return $number === '' ? '' : '<span class="of-invoice-tag" title="WHMCS broj računa">' . Admin::e($number) . '</span>';
+    }
+    public static function invoiceIdentity(int $id, ?string $number): string
+    {
+        return '<span class="of-invoice-identity"><span class="of-invoice-id">#' . $id . '</span>' . self::invoiceTag($number) . '</span>';
     }
     public static function badge(string $state): string
     {
@@ -25,7 +54,7 @@ final class Ui
     }
     public static function card(string $title, string $body, string $description = '', string $tone = ''): string
     {
-        $tone = in_array($tone, ['primary', 'close', 'refund', 'success'], true) ? ' of-card--' . $tone : '';
+        $tone = in_array($tone, ['primary', 'close', 'refund', 'success', 'records'], true) ? ' of-card--' . $tone : '';
         return '<section class="of-card' . $tone . '"><div class="of-card-header"><h3>' . Admin::e($title) . '</h3>'
             . ($description ? '<p>' . Admin::e($description) . '</p>' : '') . '</div>' . $body . '</section>';
     }

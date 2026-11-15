@@ -69,8 +69,8 @@ final class Admin
         $refundView = ($_POST['view'] ?? $_GET['view'] ?? '') === 'refunds' || $refundId > 0;
         $testView = ($_POST['view'] ?? $_GET['view'] ?? '') === 'tests' || $testId > 0;
         echo '<div class="onet-fiscal" id="onet-fiscal"><style>' . Ui::styles() . Receipt::styles() . '</style>';
-        echo '<header class="of-header"><div class="of-brand"><span class="of-brandmark" aria-hidden="true">OF</span><div>'
-            . '<h2>ONET Fiskal</h2><p>Računi, avansi i povraćaji na jednom mestu</p></div></div>' . Ui::badge('sandbox') . '</header>';
+        echo '<header class="of-header"><div class="of-brand"><span class="of-brandmark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg></span><div>'
+            . '<h2>ONET Fiskal</h2><p>WHMCS · računi i fiskalni dokumenti</p></div></div>' . Ui::badge('sandbox') . '</header>';
         echo Ui::note('Test okruženje', 'Dokumenti nisu za stvarni promet. Koristi izmišljene podatke; slanje kupcima i produkcija nisu uključeni.', 'sandbox');
         $config = null;
         try {
@@ -176,16 +176,18 @@ final class Admin
         echo Ui::card('Pronađi fakturu', $lookup);
         if ($id > 0) { self::invoice($id, $config); }
         $rows = '';
-        foreach (Capsule::table(Store::TABLE)->orderBy('id', 'desc')->limit(30)->get() as $r) {
+        $invoices = Capsule::table(Store::TABLE)->orderBy('id', 'desc')->limit(30)->get();
+        $numbers = Ui::invoiceNumbers($invoices->pluck('invoice_id')->all());
+        foreach ($invoices as $r) {
             $response = json_decode((string) $r->response, true);
             $amount = is_array($response) && is_scalar($response['totalAmount'] ?? null) ? Ui::value($response['totalAmount']) : '—';
-            $rows .= '<tr><td><a href="addonmodules.php?module=onetfiskal&amp;invoiceid=' . (int) $r->invoice_id . '">Faktura #'
-                . (int) $r->invoice_id . '</a></td><td class="of-num">' . $amount . '</td><td>' . Ui::badge($r->state)
+            $rows .= '<tr><td><a href="addonmodules.php?module=onetfiskal&amp;invoiceid=' . (int) $r->invoice_id . '">'
+                . Ui::invoiceIdentity((int) $r->invoice_id, $numbers[(int) $r->invoice_id] ?? null) . '</a></td><td class="of-num">' . $amount . '</td><td>' . Ui::badge($r->state)
                 . '</td><td>' . self::e($r->updated_at) . '</td></tr>';
         }
         $body = $rows === '' ? '<div class="of-empty"><strong>Još nema evidentiranih faktura</strong>Otvori plaćenu fakturu preko ID-a ili započni zaseban test.</div>'
             : '<div class="of-table-wrap"><table class="of-table"><thead><tr><th>Faktura</th><th class="of-num">Iznos RSD</th><th>Status</th><th>Ažurirano (UTC)</th></tr></thead><tbody>' . $rows . '</tbody></table></div>';
-        echo Ui::card('Poslednje evidentirane fakture', $body . Ui::button('addonmodules.php?module=onetfiskal&view=journal&source=invoice&state=all', 'Otvori ceo žurnal'));
+        echo Ui::card('Poslednje evidentirane fakture', $body . Ui::button('addonmodules.php?module=onetfiskal&view=journal&source=invoice&state=all', 'Otvori ceo žurnal'), '', 'records');
         self::end();
     }
 
@@ -194,7 +196,8 @@ final class Admin
         try {
             $saved = (new Store())->find($id);
             if ($saved && $saved['state'] === 'issued') {
-                echo Ui::heading('Faktura #' . $id, 'Sačuvan test račun. Ponovno otvaranje i preuzimanje ne izdaju novi dokument.', Ui::badge('issued'));
+                $numbers = Ui::invoiceNumbers([$id]);
+                echo Ui::heading('Faktura #' . $id, 'Sačuvan test račun. Ponovno otvaranje i preuzimanje ne izdaju novi dokument.', '<div class="of-heading-tags">' . Ui::invoiceTag($numbers[$id] ?? null) . Ui::badge('issued') . '</div>');
                 echo Ui::documentSteps('issued');
                 self::receipt(Receipt::decode($saved['response']), 'invoice', $id);
                 RefundAdmin::parentPanel('invoice', $id);
@@ -204,7 +207,7 @@ final class Admin
             }
             $snapshot = Store::snapshot($id);
             $row = (new Store())->find($id);
-            echo Ui::heading('WHMCS faktura #' . $id, 'Status u WHMCS-u: ' . $snapshot['invoice']['status'], $row ? Ui::badge($row['state']) : '');
+            echo Ui::heading('WHMCS faktura #' . $id, 'Status u WHMCS-u: ' . $snapshot['invoice']['status'], '<div class="of-heading-tags">' . Ui::invoiceTag($snapshot['invoice']['invoicenum'] ?? null) . ($row ? Ui::badge($row['state']) : '') . '</div>');
             echo Ui::metrics([['label' => 'Ukupna vrednost fakture', 'value' => Ui::value($snapshot['invoice']['total']), 'unit' => $snapshot['currency'], 'tone' => 'primary']]);
             $gateways = array_column($snapshot['transactions'], 'gateway');
             echo '<p class="of-muted">Način plaćanja iz transakcija: <strong>' . self::e(implode(', ', $gateways)) . '</strong></p>';
