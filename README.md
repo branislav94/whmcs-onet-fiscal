@@ -1,4 +1,7 @@
-# ONET Fiskal — v0.7.1 sandbox
+# ONET Fiskal — v0.8.0 sandbox
+
+Task-first overview across all five document sources: unresolved/rejected outcomes first, then confirmation drafts, exact WHMCS identities, requested/confirmed amounts, and explicit continuation links. An incomplete internal advance settlement is surfaced until a final draft exists. Document previews separate a prominent amount summary from line items and highlight the final confirmation action. [Read-only design preview](docs/UI-PREVIEW.html). No change to fiscal handlers, schema or private configuration.
+
 
 WHMCS invoice identities now pair the internal ID with the exact assigned `invoicenum`, without constructing a prefix or sequence. Batched read-only lookups cover recent invoices, details, journal and linked refunds; missing numbers leave the ID visible. Visual refinements follow BoardUI's typography, neutral surfaces, table composition and semantic states, implemented in scoped PHP/CSS without a new frontend dependency.
 

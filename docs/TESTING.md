@@ -72,3 +72,7 @@ Follow [advance, customer return and internal settlement acceptance](PHASE5-ADVA
 ## v0.7.1 invoice identities
 
 Two additional database cases verify an exact single-query batch lookup of assigned WHMCS numbers, blank/deleted IDs, escaping of untrusted number strings, and the invoice list/detail/journal/refund integration. The original saved fiscal response and shared lock remain unchanged.
+
+## v0.8.0 task overview
+
+Database coverage checks multi-source counts and unknown-outcome prioritization without writes or lock changes, explicit empty filters, internal-settlement/final-draft continuation, and selecting the frozen request amount rather than an unconfirmed response amount. Counts query only state columns; detailed payloads are fetched for the displayed page.

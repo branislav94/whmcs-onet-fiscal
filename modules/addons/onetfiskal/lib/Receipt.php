@@ -7,7 +7,7 @@ use RuntimeException;
 
 final class Product
 {
-    public const VERSION = '0.7.1';
+    public const VERSION = '0.8.0';
 
     public static function information(): string
     {

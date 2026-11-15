@@ -88,3 +88,35 @@ $tests['invoice list detail journal and refund show linked WHMCS number without 
     equal($original['response'], (new \Onet\Fiskal\Store())->find(48)['response']);
     equal(null, \WHMCS\Database\Capsule::table(\Onet\Fiskal\Store::GUARD)->value('attempt_id')); $_GET = [];
 };
+
+$tests['work overview prioritizes unresolved requests across sources and keeps explicit empty filters'] = function () use ($config, $snapshot): void {
+    resetDatabase(); $api = new DbApi(); $api->timeout = true;
+    (new \Onet\Fiskal\Service(new \Onet\Fiskal\Store(hash_file('sha256', $config['pfx_path'])), $api, $config))->issue(48, $snapshot, 1);
+    (new \Onet\Fiskal\Store(hash_file('sha256', $config['pfx_path']), 'synthetic'))->createSynthetic($snapshot, bin2hex(random_bytes(16)), 1);
+    $before = \WHMCS\Database\Capsule::table(\Onet\Fiskal\Store::GUARD)->first();
+    $data = \Onet\Fiskal\Workbench::data();
+    equal('attention', $data['filter']); equal(1, $data['counts']['attention']); equal(1, $data['counts']['review']); equal(2, $data['counts']['all']);
+    equal('unknown', $data['rows'][0]['state']); equal('invoice', $data['rows'][0]['source']);
+    $all = \Onet\Fiskal\Workbench::data('all'); equal(2, count($all['rows'])); equal('unknown', $all['rows'][0]['state']);
+    $issued = \Onet\Fiskal\Workbench::data('issued'); equal('issued', $issued['filter']); equal([], $issued['rows']);
+    equal((array) $before, (array) \WHMCS\Database\Capsule::table(\Onet\Fiskal\Store::GUARD)->first()); equal(1, $api->posts);
+};
+$tests['work overview surfaces an internal closing until its final draft is prepared'] = function () use ($config): void {
+    resetDatabase(); $api = new AdvanceApi(); $payment = openAdvance($config, $api);
+    $store = new \Onet\Fiskal\AdvanceStore($config); $group = (int) $payment['group_id'];
+    $close = $store->draft($group, 'close', bin2hex(random_bytes(16)), ['final_amount' => '1190.00', 'topup_method' => '4'], 1);
+    advanceIssue($store, $api, $config, $close);
+    $data = \Onet\Fiskal\Workbench::data(); equal(1, $data['closing_count']); equal($group, (int) $data['closings'][0]->group_id);
+    $_GET = []; ob_start(); try { \Onet\Fiskal\Workbench::render(''); $html = ob_get_contents(); } finally { ob_end_clean(); }
+    equal(true, str_contains($html, 'Avansni postupak nije završen')); equal(true, str_contains($html, 'Nastavi porudžbinu #'));
+    equal(false, str_contains($html, 'value="advance_issue"'));
+    $final = $store->draft($group, 'final', bin2hex(random_bytes(16)), [], 1);
+    $data = \Onet\Fiskal\Workbench::data(); equal(0, $data['closing_count']); equal(1, $data['counts']['review']); equal(2, $api->posts);
+};
+$tests['work overview never presents an unconfirmed response amount as the trusted requested amount'] = function (): void {
+    $row = ['state' => 'unknown', 'response' => '{"totalAmount":9999}',
+        'payload' => '{"items":[{"totalAmount":1190}]}', 'snapshot' => null];
+    equal('1.190,00', \Onet\Fiskal\Workbench::amount($row));
+    $row['state'] = 'issued'; equal('9.999,00', \Onet\Fiskal\Workbench::amount($row));
+    $row['state'] = 'unknown'; $row['payload'] = null; equal('—', \Onet\Fiskal\Workbench::amount($row));
+};

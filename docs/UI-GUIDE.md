@@ -1,4 +1,4 @@
-# ONET Fiskal 0.7.1 — pregledniji administratorski interfejs
+# ONET Fiskal 0.8.0 — pregledniji administratorski interfejs
 
 Ovo je nadogradnja prikaza postojećeg sandbox modula. Ne dodaje nove fiskalne tipove, bankarski API, mejlove ili produkciju. WHMCS zaglavlje i bočna navigacija ostaju izvan stilova dodatka.
 
@@ -9,6 +9,20 @@ Ovo je nadogradnja prikaza postojećeg sandbox modula. Ne dodaje nove fiskalne t
 3. Nemoj deaktivirati dodatak, brisati evidenciju ili menjati privatni config/PFX. Ova verzija ne dodaje novu šemu baze.
 4. Ponovo otvori ONET Fiskal i osveži stranicu. CSS je lokalno ugrađen u odgovor; nema CDN-a, fontova ili skripti treće strane.
 5. Otvori ranije izdatu prodaju, refundaciju i avans. Proveri žurnal, QR, HTML/TXT i štampu. Sam pregled ne izdaje dokument.
+
+## Radni pregled
+
+Početni ekran prikazuje broj zahteva koji traže pažnju, nacrta za potvrdu i izdatih dokumenata. To su dokumenti svih vrsta, uključujući kopije; nisu zbirni promet ili saldo novca.
+
+Podrazumevani filter prvo otvara nepotvrđene/odbijene zahteve, pa nacrte kada nema zahteva za pažnju. Ručno izabran filter ostaje izabran i kada je prazan. Prikazuje se do 25 redova; kompletna evidencija dostupna je u žurnalu. Nepotvrđeni zahtevi vode na proveru postojećeg zahteva, nacrti na pregled, a izdati dokumenti na sačuvani prikaz. Samo otvaranje reda ne šalje fiskalni zahtev.
+
+Posebna traka pokazuje porudžbine čiji je interni AR potvrđen, ali još nema aktivnog nacrta ili izdatog konačnog PP. Dugme otvara postojeći postupak i ne ponavlja zatvaranje.
+
+Kod potvrđenog dokumenta iznos dolazi iz sačuvanog potvrđenog odgovora. Kod nacrta/nepoznatog ishoda prikazuje se sačuvani zahtev/snapshot, nikada iznos nepotvrđenog odgovora. Ako podaci nisu sačuvani, stoji crta i „Proverava se na pregledu”.
+
+U pregledu refundacije ili avansa veliki iznos u sažetku je odvojen od stavki; na užem ekranu sažetak ide na vrh. Obavezna potvrda i glavno dugme ostaju zasebni od tehničkog JSON-a. Na ekranu detalja nema konkurentne liste drugih faktura.
+
+[Samostalni pregled dizajna](UI-PREVIEW.html) koristi izmišljene podatke i isključene radnje. Vizuelni pregled u aktivnoj WHMCS temi i dalje je potreban.
 
 ## Broj WHMCS računa uz interni ID
 

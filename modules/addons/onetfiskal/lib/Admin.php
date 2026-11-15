@@ -31,7 +31,7 @@ final class Admin
         if (!in_array($tone, ['primary', 'issue', 'close', 'refund', 'quiet', 'success'], true)) { $tone = 'primary'; }
         $hint = $issuing ? 'Šalje novi test dokument Poreskoj.' : ($reconcile ? 'Proverava postojeći zahtev. Ne izdaje novi dokument.'
             : ($money ? 'Samo evidencija. Ne šalje nalog banci.' : ($action === 'test' ? 'Provera sertifikata, veze i poreske oznake.' : 'Sledi pregled i potvrda. Dokument se još ne šalje.')));
-        return '<form class="of-form" method="post" action="addonmodules.php?module=onetfiskal&amp;invoiceid=' . $invoiceId . '">'
+        return '<form class="of-form" data-phase="' . ($issuing ? 'issue' : ($reconcile ? 'reconcile' : 'preview')) . '" method="post" action="addonmodules.php?module=onetfiskal&amp;invoiceid=' . $invoiceId . '">'
             . (function_exists('generate_token') ? generate_token('form') : '')
             . '<input type="hidden" name="onet_token" value="' . self::e($_SESSION['onetfiskal_csrf'] ?? '') . '">'
             . '<input type="hidden" name="action" value="' . self::e($action) . '">'
@@ -169,25 +169,15 @@ final class Admin
             self::end();
             return;
         }
-        echo Ui::heading('WHMCS fakture', 'Otvori plaćenu fakturu, proveri iznos i pripremi test račun. Plaćanje samo dodaje fakturu u pregled.');
-        $lookup = '<form class="of-form of-inline-form" method="get" action="addonmodules.php"><input type="hidden" name="module" value="onetfiskal">'
-            . Ui::field('WHMCS ID fakture', '<input type="number" name="invoiceid" min="1" value="' . ($id ?: '') . '" placeholder="Na primer: 48" required>')
-            . '<button class="of-button of-button--primary">Otvori fakturu</button></form>';
-        echo Ui::card('Pronađi fakturu', $lookup);
-        if ($id > 0) { self::invoice($id, $config); }
-        $rows = '';
-        $invoices = Capsule::table(Store::TABLE)->orderBy('id', 'desc')->limit(30)->get();
-        $numbers = Ui::invoiceNumbers($invoices->pluck('invoice_id')->all());
-        foreach ($invoices as $r) {
-            $response = json_decode((string) $r->response, true);
-            $amount = is_array($response) && is_scalar($response['totalAmount'] ?? null) ? Ui::value($response['totalAmount']) : '—';
-            $rows .= '<tr><td><a href="addonmodules.php?module=onetfiskal&amp;invoiceid=' . (int) $r->invoice_id . '">'
-                . Ui::invoiceIdentity((int) $r->invoice_id, $numbers[(int) $r->invoice_id] ?? null) . '</a></td><td class="of-num">' . $amount . '</td><td>' . Ui::badge($r->state)
-                . '</td><td>' . self::e($r->updated_at) . '</td></tr>';
+        if ($id > 0) {
+            echo '<div class="of-breadcrumb">' . Ui::button('addonmodules.php?module=onetfiskal', '← Radni pregled') . '</div>';
+            self::invoice($id, $config);
+        } else {
+            $lookup = '<form class="of-form of-inline-form" method="get" action="addonmodules.php"><input type="hidden" name="module" value="onetfiskal">'
+                . Ui::field('Otvori WHMCS fakturu · interni ID', '<input type="number" name="invoiceid" min="1" placeholder="Npr. 48" required>')
+                . '<button class="of-button of-button--primary">Otvori fakturu →</button></form>';
+            Workbench::render($lookup);
         }
-        $body = $rows === '' ? '<div class="of-empty"><strong>Još nema evidentiranih faktura</strong>Otvori plaćenu fakturu preko ID-a ili započni zaseban test.</div>'
-            : '<div class="of-table-wrap"><table class="of-table"><thead><tr><th>Faktura</th><th class="of-num">Iznos RSD</th><th>Status</th><th>Ažurirano (UTC)</th></tr></thead><tbody>' . $rows . '</tbody></table></div>';
-        echo Ui::card('Poslednje evidentirane fakture', $body . Ui::button('addonmodules.php?module=onetfiskal&view=journal&source=invoice&state=all', 'Otvori ceo žurnal'), '', 'records');
         self::end();
     }
 

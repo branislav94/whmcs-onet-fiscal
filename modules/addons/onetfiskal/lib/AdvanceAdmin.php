@@ -7,8 +7,8 @@ use WHMCS\Database\Capsule;
 
 final class AdvanceAdmin
 {
-    public const LABELS = ['payment' => 'Avans–Prodaja', 'return' => 'Avans–Refundacija: povraćaj kupcu',
-        'close' => 'Avans–Refundacija: interno zatvaranje', 'final' => 'Konačni Promet–Prodaja'];
+    public const LABELS = ['payment' => 'Primljeni avans', 'return' => 'Povraćaj avansa kupcu',
+        'close' => 'Interno zatvaranje avansa', 'final' => 'Konačni račun iz avansa'];
     public static function url(int $id = 0, int $group = 0): string
     {
         return 'addonmodules.php?module=onetfiskal&view=advances&advanceid=' . $id . '&groupid=' . $group;
