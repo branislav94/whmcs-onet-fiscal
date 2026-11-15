@@ -10,14 +10,14 @@ final class CopyDocument
 {
     public static function parent(string $source, int $id): array
     {
-        if (!in_array($source, ['invoice', 'synthetic', 'refund'], true) || $id < 1) {
+        if (!in_array($source, ['invoice', 'synthetic', 'refund', 'advance'], true) || $id < 1) {
             throw new RuntimeException('Izaberi potvrđenu originalnu prodaju ili refundaciju; kopija kopije nije podržana.');
         }
         $row = (new Store('', $source))->find($id);
         if (!$row || $row['state'] !== 'issued') { throw new RuntimeException('Originalni dokument nije potvrđeno izdat.'); }
         $payload = json_decode((string) $row['payload'], true);
         $response = Receipt::decode($row['response']);
-        if (!is_array($payload) || ($payload['invoiceType'] ?? null) !== 0
+        if (!is_array($payload) || !in_array($payload['invoiceType'] ?? null, [0, 4], true)
             || !in_array($payload['transactionType'] ?? null, [0, 1], true)
             || empty($payload['items']) || empty($payload['payment']) || empty($row['credential'])
             || !is_string($response['sdcDateTime'] ?? null)) {

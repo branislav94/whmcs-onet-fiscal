@@ -15,7 +15,7 @@ final class CopyAdmin
     {
         return 'addonmodules.php?module=onetfiskal&' . match ($source) {
             'invoice' => 'invoiceid=' . $id, 'synthetic' => 'view=tests&testid=' . $id,
-            'refund' => 'view=refunds&refundid=' . $id, default => 'view=journal',
+            'refund' => 'view=refunds&refundid=' . $id, 'advance' => 'view=advances&advanceid=' . $id, default => 'view=journal',
         };
     }
     private static function extra(int $id): string
@@ -72,7 +72,7 @@ final class CopyAdmin
                 echo '<h4>Kopija #' . $id . '</h4><p>Stanje: ' . Admin::e($row['state']) . ' · RequestId: ' . Admin::e($row['request_id']) . '</p>'
                     . '<p>Original: <a href="' . Admin::e(self::originalUrl($row['parent_source'], (int) $row['parent_id'])) . '">'
                     . Admin::e($parent['response']['invoiceNumber']) . '</a></p>';
-                if ($row['state'] === 'issued') { Admin::receipt(Receipt::decode($row['response']), 'copy', $id); }
+                if ($row['state'] === 'issued') { Admin::receipt(Receipt::decode($row['response']), 'copy', $id, Advance::notes('copy', $row)); }
                 elseif (in_array($row['state'], ['sending', 'unknown'], true)) {
                     echo Admin::form('copy_reconcile', 0, 'Proveri ishod kopije (GET)', self::extra($id));
                 } elseif ($row['state'] === 'review' && $config) {

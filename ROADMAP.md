@@ -13,8 +13,8 @@ Full/partial refunds, buyer identification and original-receipt references, safe
 ## Phase 4 — Accounting rules: in parallel
 Confirm supply timing for annual hosting, renewal and domains; advance/final documents; domestic business, individual and foreign customer routing, VAT and SEF. Existing accountant policy work remains provisional until reviewed.
 
-## Phase 5 — Complete fiscal document flows: copies candidate v0.5.0
-Copy/Sale and Copy/Refund implemented; [acceptance checks](docs/PHASE5-COPIES.md) await the first authenticated sandbox copy. This is one part of phase 5, not completion of the full checklist.
+## Phase 5 — Complete fiscal document flows: advances candidate v0.6.0
+Copy/Sale -8 and Copy/Refund -9 verified by the user including official portal checks; PR #6 merged. Manual one-payment advance/return/internal-settlement/final flows implemented; [advance acceptance checks](docs/PHASE5-ADVANCES.md) await authenticated sandbox validation. This is one part of phase 5, not completion of the full checklist.
 Implement agreed advances and closing flows, copies, applicable tax, quantities, item catalogue/GTIN and remaining mandatory ESIR functions. Validate the whole applicable checklist rather than assuming current tests establish compliance.
 
 ## Phase 6 — Automation and customer delivery

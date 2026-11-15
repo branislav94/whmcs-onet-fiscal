@@ -1,4 +1,8 @@
-# ONET Fiskal — v0.5.0 sandbox
+# ONET Fiskal — v0.6.0 sandbox
+
+Manual fictitious advance orders: Advance/Sale, customer returns, separate internal Advance/Refund settlement and a final Normal/Sale with only the new top-up payment. Durable group evidence and shared locking support recovery between settlement and final issuance. Includes advance annotations, protected exports, copies and ordinary final-sale refunds. No production, banking, WHMCS order mutation or email automation. [Upgrade and exact acceptance cases](docs/PHASE5-ADVANCES.md).
+
+## v0.5.0 foundation
 
 Adds explicitly confirmed Copy/Sale and Copy/Refund documents with original references, shared fiscal locking, reconciliation, a journal source and protected exports. Saved-original reprints remain read-only. Copies never change the refund balance, money-return evidence or WHMCS financial records. [Upgrade and first tests](docs/PHASE5-COPIES.md).
 

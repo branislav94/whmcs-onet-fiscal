@@ -128,21 +128,23 @@ final class Store implements Repository
     public const TESTS = 'mod_onetfiskal_tests';
     public const REFUNDS = 'mod_onetfiskal_refunds';
     public const COPIES = 'mod_onetfiskal_copies';
+    public const ADVANCES = 'mod_onetfiskal_advances';
+    public const ADVANCE_GROUPS = 'mod_onetfiskal_advance_groups';
     public const GUARD = 'mod_onetfiskal_guard';
 
     private string $table;
 
     public function __construct(private string $credential = '', private string $source = 'invoice')
     {
-        if (!in_array($source, ['invoice', 'synthetic', 'refund', 'copy'], true)) {
+        if (!in_array($source, ['invoice', 'synthetic', 'refund', 'copy', 'advance'], true)) {
             throw new RuntimeException('Nepoznat izvor računa.');
         }
-        $this->table = match ($source) { 'synthetic' => self::TESTS, 'refund' => self::REFUNDS, 'copy' => self::COPIES, default => self::TABLE };
+        $this->table = match ($source) { 'synthetic' => self::TESTS, 'refund' => self::REFUNDS, 'copy' => self::COPIES, 'advance' => self::ADVANCES, default => self::TABLE };
     }
 
     public static function install(): void
     {
-        foreach ([self::TABLE, self::TESTS, self::REFUNDS, self::COPIES] as $table) {
+        foreach ([self::TABLE, self::TESTS, self::REFUNDS, self::COPIES, self::ADVANCES] as $table) {
           if (!Capsule::schema()->hasTable($table)) {
             Capsule::schema()->create($table, static function ($t) use ($table): void {
                 $t->engine = 'InnoDB';
@@ -157,6 +159,17 @@ final class Store implements Repository
                 $t->unsignedInteger('admin_id')->nullable();
                 $t->dateTime('created_at');
                 $t->dateTime('updated_at');
+                if ($table === self::ADVANCES) {
+                    $t->unsignedInteger('group_id')->index();
+                    $t->string('kind', 16);
+                    $t->string('draft_key', 32)->unique();
+                    $t->unsignedBigInteger('amount_cents');
+                    $t->longText('request_input');
+                    $t->longText('meta');
+                    $t->string('money_reference', 120)->nullable();
+                    $t->unsignedInteger('money_admin')->nullable();
+                    $t->dateTime('money_recorded_at')->nullable();
+                }
                 if ($table === self::COPIES) {
                     $t->string('parent_source', 16);
                     $t->unsignedInteger('parent_id');
@@ -180,6 +193,12 @@ final class Store implements Repository
                 }
             });
           }
+        }
+        if (!Capsule::schema()->hasTable(self::ADVANCE_GROUPS)) {
+            Capsule::schema()->create(self::ADVANCE_GROUPS, static function ($t): void {
+                $t->engine = 'InnoDB'; $t->increments('id'); $t->string('root_key', 32)->unique();
+                $t->longText('root'); $t->unsignedInteger('admin_id'); $t->dateTime('created_at');
+            });
         }
         if (!Capsule::schema()->hasTable(self::GUARD)) {
             Capsule::schema()->create(self::GUARD, static function ($t): void {

@@ -47,6 +47,8 @@ final class Admin
         if (empty($_SESSION['onetfiskal_csrf'])) { $_SESSION['onetfiskal_csrf'] = bin2hex(random_bytes(32)); }
         $id = max(0, (int) ($_POST['invoiceid'] ?? $_GET['invoiceid'] ?? 0));
         $testId = max(0, (int) ($_POST['testid'] ?? $_GET['testid'] ?? 0));
+        $advanceId = max(0, (int) ($_POST['advanceid'] ?? $_GET['advanceid'] ?? 0));
+        $advanceView = ($_POST['view'] ?? $_GET['view'] ?? '') === 'advances' || $advanceId > 0;
         $copyId = max(0, (int) ($_POST['copyid'] ?? $_GET['copyid'] ?? 0));
         $copyView = ($_POST['view'] ?? $_GET['view'] ?? '') === 'copies' || $copyId > 0;
         $refundId = max(0, (int) ($_POST['refundid'] ?? $_GET['refundid'] ?? 0));
@@ -55,7 +57,7 @@ final class Admin
         echo '<div style="max-width:1100px"><h2>ONET Fiskal <small>' . Product::VERSION . ' · SANDBOX</small></h2>';
         echo '<div class="alert alert-warning"><strong>Razvojno okruženje — računi nisu za stvarni promet.</strong> '
             . 'Ova verzija izdaje test Promet–Prodaja i ručne bezgotovinske refundacije za domaća fizička lica: jedna puna uplata, RSD, podešena sandbox VAT stopa, cene bez poreza u WHMCS-u. '
-            . 'Avansi, B2B, kredit sa naloga i automatsko slanje klijentima nisu uključeni.</div>';
+            . 'Automatski obračun avansa za stvarne usluge, B2B, kredit sa naloga i automatsko slanje klijentima nisu uključeni.</div>';
         echo Product::information();
         echo '<style>' . Receipt::styles() . '</style>';
         $config = null;
@@ -71,7 +73,10 @@ final class Admin
                 }
                 if (!$config) { throw new RuntimeException('Prvo podesi konfiguraciju.'); }
                 $action = (string) ($_POST['action'] ?? '');
-                if (str_starts_with($action, 'copy_')) {
+                if (str_starts_with($action, 'advance_')) {
+                    $advanceView = true;
+                    $advanceId = AdvanceAdmin::handle($action, $config, $advanceId);
+                } elseif (str_starts_with($action, 'copy_')) {
                     $copyView = true;
                     $copyId = CopyAdmin::handle($action, $config, $copyId);
                 } elseif (str_starts_with($action, 'refund_')) {
@@ -119,15 +124,21 @@ final class Admin
         }
         echo '<p><a class="btn btn-default" href="addonmodules.php?module=onetfiskal&amp;view=refunds">Refundacije</a></p>';
         echo '<p><a class="btn btn-default" href="addonmodules.php?module=onetfiskal&amp;view=copies">Kopije</a></p>';
+        echo '<p><a class="btn btn-default" href="addonmodules.php?module=onetfiskal&amp;view=advances">Avansi</a></p>';
         echo self::form('test', $id, 'Proveri vezu i poresku oznaku', $testView ? '<input type="hidden" name="view" value="tests"><input type="hidden" name="testid" value="' . $testId . '">' : '');
         $guard = Capsule::table(Store::GUARD)->where('id', 1)->first();
         if ($guard && $guard->attempt_id !== null) {
             $source = $guard->source ?? 'invoice';
-            $table = match ($source) { 'refund' => Store::REFUNDS, 'synthetic' => Store::TESTS, 'copy' => Store::COPIES, default => Store::TABLE };
+            $table = match ($source) { 'refund' => Store::REFUNDS, 'synthetic' => Store::TESTS, 'copy' => Store::COPIES, 'advance' => Store::ADVANCES, default => Store::TABLE };
             $busyId = (int) Capsule::table($table)->where('id', $guard->attempt_id)->value('invoice_id');
             $target = $source === 'copy' ? CopyAdmin::url($busyId) : CopyAdmin::originalUrl($source, $busyId);
             echo '<div class="alert alert-danger">Novo izdavanje je zaključano dok se ne proveri ishod zahteva '
                 . '<a href="' . self::e($target) . '">' . self::e($source) . ' #' . $busyId . '</a>.</div>';
+        }
+        if ($advanceView) {
+            AdvanceAdmin::render($config, $advanceId, max(0, (int) ($_POST['groupid'] ?? $_GET['groupid'] ?? 0)));
+            echo '</div>';
+            return;
         }
         if ($copyView) {
             CopyAdmin::render($config, $copyId);
@@ -202,9 +213,9 @@ final class Admin
         }
     }
 
-    public static function receipt(array $response, string $source = '', int $id = 0): void
+    public static function receipt(array $response, string $source = '', int $id = 0, array $notes = []): void
     {
-        echo Receipt::fragment($response);
+        echo Receipt::fragment($response, $notes);
         if (in_array($source, ['invoice', 'synthetic'], true) && $id > 0) {
             echo Receipt::links($source, $id);
         }

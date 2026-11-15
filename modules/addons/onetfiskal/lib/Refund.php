@@ -9,7 +9,7 @@ final class Refund
 {
     public static function parent(string $source, int $id): array
     {
-        if (!in_array($source, ['invoice', 'synthetic'], true) || $id < 1) {
+        if (!in_array($source, ['invoice', 'synthetic', 'advance'], true) || $id < 1) {
             throw new RuntimeException('Refundacija je dozvoljena samo za originalnu prodaju iz ovog modula.');
         }
         $row = (new Store('', $source))->find($id);
@@ -174,7 +174,7 @@ final class RefundStore implements Repository
             Capsule::table(Store::GUARD)->where('id', 1)->lockForUpdate()->first();
             $row = Capsule::table(Store::REFUNDS)->where('invoice_id', $id)->lockForUpdate()->first();
             if (!$row || $row->state !== 'review' || (int) $row->admin_id !== $adminId) { throw new RuntimeException('Nacrt nije dostupan za novo izdavanje.'); }
-            $table = $row->parent_source === 'invoice' ? Store::TABLE : Store::TESTS;
+            $table = match ($row->parent_source) { 'invoice' => Store::TABLE, 'advance' => Store::ADVANCES, default => Store::TESTS };
             Capsule::table($table)->where('invoice_id', $row->parent_id)->lockForUpdate()->first();
             $parent = Refund::parent($row->parent_source, (int) $row->parent_id);
             $selection = json_decode($row->selection, true, 512, JSON_THROW_ON_ERROR);
