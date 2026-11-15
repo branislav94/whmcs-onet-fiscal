@@ -1,4 +1,7 @@
-# ONET Fiskal — v0.8.0 sandbox
+# ONET Fiskal — v0.9.0 sandbox
+
+Administrator-only customer-delivery preview: resolve the original WHMCS client's email, preview sandbox HTML/text messages and exact saved HTML/TXT attachments. Internal advance closing documents and their copies are excluded. No mail transport, delivery queue writes, public client access or server-generated PDF is enabled. [Phase 6 preview and upgrade guide](docs/PHASE6-DELIVERY.md).
+
 
 Task-first overview across all five document sources: unresolved/rejected outcomes first, then confirmation drafts, exact WHMCS identities, requested/confirmed amounts, and explicit continuation links. An incomplete internal advance settlement is surfaced until a final draft exists. Document previews separate a prominent amount summary from line items and highlight the final confirmation action. [Read-only design preview](docs/UI-PREVIEW.html). No change to fiscal handlers, schema or private configuration.
 

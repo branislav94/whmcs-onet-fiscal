@@ -126,12 +126,18 @@ final class Admin
                 echo '<div class="alert alert-danger">' . self::e($e->getMessage()) . '</div>';
             }
         }
+        $deliveryView = ($_POST['view'] ?? $_GET['view'] ?? '') === 'delivery';
         $active = $advanceView ? 'advances' : ($copyView ? 'copies' : ($refundView ? 'refunds' : ($testView ? 'tests' : (($_POST['view'] ?? $_GET['view'] ?? '') === 'journal' ? 'journal' : 'invoices'))));
+        if ($deliveryView) { $active = 'delivery'; }
         echo Ui::nav($active);
         $context = '<input type="hidden" name="view" value="' . self::e($active) . '">'
             . '<input type="hidden" name="testid" value="' . $testId . '"><input type="hidden" name="refundid" value="' . $refundId . '">'
             . '<input type="hidden" name="copyid" value="' . $copyId . '"><input type="hidden" name="advanceid" value="' . $advanceId . '">'
             . '<input type="hidden" name="groupid" value="' . max(0, (int) ($_POST['groupid'] ?? $_GET['groupid'] ?? 0)) . '">';
+        if ($deliveryView) {
+            $context .= '<input type="hidden" name="source" value="' . self::e(is_string($_POST['source'] ?? $_GET['source'] ?? null) ? ($_POST['source'] ?? $_GET['source']) : '') . '">'
+                . '<input type="hidden" name="documentid" value="' . max(0, (int) ($_POST['documentid'] ?? $_GET['documentid'] ?? 0)) . '">';
+        }
         echo '<div class="of-toolbar"><span class="of-muted">' . ($config ? 'Konfiguracija je učitana · RSD · Sandbox VAT ' . self::e($config['vat_rate']) . '%' : 'Potrebno je podesiti privatnu konfiguraciju') . '</span><div class="of-actions">'
             . self::form('test', $id, 'Proveri vezu', $context, 'quiet') . '</div></div>';
         $guard = Capsule::table(Store::GUARD)->where('id', 1)->first();
@@ -142,6 +148,11 @@ final class Admin
             $target = $source === 'copy' ? CopyAdmin::url($busyId) : CopyAdmin::originalUrl($source, $busyId);
             echo '<div class="alert alert-danger">Novo izdavanje je zaključano dok se ne proveri ishod zahteva '
                 . '<a href="' . self::e($target) . '">' . self::e($source) . ' #' . $busyId . '</a>.</div>';
+        }
+        if ($deliveryView) {
+            Delivery::render(array_merge($_GET, $_POST));
+            self::end();
+            return;
         }
         if ($active === 'journal') {
             Journal::render($_GET);
@@ -227,6 +238,7 @@ final class Admin
         echo '<details class="of-receipt-panel" open><summary>Dokument i QR provera</summary>' . Receipt::fragment($response, $notes);
         if (in_array($source, ['invoice', 'synthetic', 'refund', 'copy', 'advance'], true) && $id > 0) {
             echo Receipt::links($source, $id);
+            echo '<div class="of-actions">' . Delivery::link($source, $id) . '</div>';
         }
         echo '</details>';
     }

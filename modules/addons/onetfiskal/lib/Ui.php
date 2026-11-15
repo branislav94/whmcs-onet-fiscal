@@ -144,7 +144,7 @@ final class Ui
     public static function nav(string $active): string
     {
         $tabs = ['invoices' => ['Radni pregled', ''], 'journal' => ['Žurnal', 'journal'], 'advances' => ['Avansi', 'advances'],
-            'refunds' => ['Povraćaji', 'refunds'], 'copies' => ['Kopije', 'copies'], 'tests' => ['Test prodaja', 'tests']];
+            'refunds' => ['Povraćaji', 'refunds'], 'copies' => ['Kopije', 'copies'], 'tests' => ['Test prodaja', 'tests'], 'delivery' => ['Dostava · pregled', 'delivery']];
         $html = '<nav class="of-nav" aria-label="ONET Fiskal sekcije">';
         foreach ($tabs as $key => [$label, $view]) {
             $html .= '<a href="addonmodules.php?module=onetfiskal' . ($view ? '&amp;view=' . $view : '') . '"'
